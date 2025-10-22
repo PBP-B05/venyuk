@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'promo',
     'blog',
     'versus',
+    'authenticate',
 ]
 
 MIDDLEWARE = [
