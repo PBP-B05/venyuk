@@ -1,0 +1,40 @@
+{% load static %}
+<div class="venue-card card">
+    <!-- Gambar Venue -->
+    {% if venue.thumbnail %}
+        <img src="{{ venue.thumbnail.url }}" alt="{{ venue.name }}" class="card-img-top">
+    {% else %}
+        <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="card-img-top">
+    {% endif %}
+
+    <div class="card-body">
+        <!-- Tag -->
+        <span class="badge bg-secondary mb-2 px-3 py-2">Venue</span>
+
+        <!-- Nama Venue -->
+        <h5 class="card-title fw-bold mb-2">{{ venue.name }}</h5>
+
+        <!-- Rating dan Kota -->
+        <div class="d-flex align-items-center text-muted mb-3">
+            <span class="text-warning me-1">★</span>
+            <span class="fw-semibold text-dark me-2">{{ venue.rating|floatformat:2 }}</span>
+            {% if venue.address %}
+                <span class="text-muted">• {{ venue.address }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Cabang Olahraga -->
+        <div class="d-flex align-items-center mb-3 sport-wrapper">
+            <img src="{% static 'images/icon_sport.png' %}" 
+                 alt="{{ venue.get_category_display }}" class="sport-icon me-2">
+            <span class="fw-medium text-dark">{{ venue.get_category_display }}</span>
+        </div>
+    </div>
+
+    <!-- Footer Harga -->
+    <div class="card-footer bg-white border-0 pt-0 pb-3 px-3">
+        <p class="fw-semibold mb-0 text-primary">
+            Mulai <span class="text-dark">Rp {{ venue.price|floatformat:0 }}</span> / sesi
+        </p>
+    </div>
+</div>
