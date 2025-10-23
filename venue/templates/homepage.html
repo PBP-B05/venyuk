@@ -8,251 +8,198 @@
 {% block content %}
 {% include 'navbar.html' %}
 
-<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-red-100 to-slate-200">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
 
-    <!-- Header -->
-    <div class="mb-10 text-center">
-      <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
-        Discover and Book Your Sports Venue
-      </h1>
-      <p class="text-lg sm:text-xl text-slate-600 font-medium">
-        Find the best venues and book instantly — only on <span class="text-red-600 font-semibold">VenYuk!</span>
-      </p>
+  <!-- Hero Section -->
+  <section class="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white"
+           style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static "images/banner_homepage.jpg" %});">
+    <div class="px-6">
+      <h1 class="text-5xl sm:text-6xl font-extrabold mb-4 tracking-tight">BOOKING VENUE di VenYuk!</h1>
+      <p class="text-lg sm:text-xl text-slate-200 mb-6">Temukan dan booking venue olahraga terbaik dengan mudah</p>
+      <a href="#venues"
+         class="inline-block px-8 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg shadow-md transition">
+        BOOKING SEKARANG!
+      </a>
     </div>
+  </section>
 
-    <!-- Add Venue Button -->
-    {% if user.is_authenticated %}
-      <button onclick="showAddVenueModal()" class="bg-red-600 text-white px-4 py-2 rounded-md shadow hover:bg-red-700 transition">
-        + Add Venue
-      </button>
-    {% else %}
-      <button onclick="showLoginModal()" class="bg-red-600 text-white px-4 py-2 rounded-md shadow hover:bg-red-700 transition">
-        + Login to Add
-      </button>
-    {% endif %}
+  <!-- Filter Section -->
+  <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
+    <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-slate-200 px-5 py-6">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+        <input type="text" id="search" class="form-control border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400"
+               placeholder="Cari venue...">
 
-    <!-- Filter Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-10 bg-white/80 backdrop-blur-lg rounded-xl border border-slate-200 px-5 py-4 shadow-sm mt-6">
-      <div class="flex space-x-3 mb-3 sm:mb-0">
-        <a id="filter-all"
-           class="px-4 py-2 rounded-lg font-medium transition-all bg-red-600 text-white shadow hover:bg-red-700">
-          All Venues
-        </a>
-        <a id="filter-my"
-           class="px-4 py-2 rounded-lg font-medium transition-all bg-white text-slate-700 border border-slate-300 hover:bg-red-600 hover:text-white">
-          My Venues
-        </a>
+        <select id="category" class="form-select border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400">
+          <option value="">Semua Kategori</option>
+          {% for key, value in categories.items %}
+            <option value="{{ key }}">{{ value }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Min Price" id="min_price">
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Max Price" id="max_price">
+
+        <button onclick="filterVenues()"
+                class="bg-rose-600 text-white rounded-md font-semibold shadow hover:bg-rose-700 transition">
+          Filter
+        </button>
       </div>
-
-      {% if user.is_authenticated %}
-        <div class="text-sm text-slate-600 font-medium">
-          Last login: {{ last_login }}
-        </div>
-      {% endif %}
-
-      <button id="refreshVenues" class="bg-green-600 text-white px-4 py-2 rounded-md ml-3 hover:bg-green-700">
-        Refresh
-      </button>
     </div>
-
-    <!-- Loading State -->
-    <div id="loading" class="bg-white/90 backdrop-blur-md rounded-xl border border-slate-200 p-12 text-center hidden">
-      <svg class="animate-spin h-8 w-8 text-red-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-      </svg>
-      <p class="text-slate-600 mt-3">Loading venues...</p>
-    </div>
-
-    <!-- Error State -->
-    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-700 font-medium shadow-sm"></div>
-
-    <!-- Venue Grid -->
-    <div id="grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-
-    <!-- Empty State -->
-    <div id="empty" class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 px-10 py-14 text-center shadow-md hidden">
-      <div class="w-28 h-28 mx-auto mb-6">
-        <img src="{% static 'images/no-venue.png' %}" alt="No venue available" class="w-full h-full object-contain">
-      </div>
-      <h3 class="text-2xl font-bold text-slate-800 mb-3">No Venues Found</h3>
-      <p class="text-slate-600 mb-8">Be the first to register your sports venue today!</p>
-      {% if user.is_authenticated %}
-      <button onclick="showAddVenueModal()"
-         class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold shadow hover:bg-red-700 transition-colors">
-        Add Venue
-      </button>
-      {% else %}
-      <button onclick="showLoginModal()"
-         class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold shadow hover:bg-red-700 transition-colors">
-        Login to Add
-      </button>
-      {% endif %}
-    </div>
-
   </div>
-  {% include 'modal.html' %}
+
+  <!-- Venues Section -->
+  <div class="max-w-7xl mx-auto px-6 pb-20" id="venues">
+    {% if venues %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="venues-container">
+        {% for venue in venues %}
+          {% include 'card_product.html' %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 px-10 py-14 text-center shadow-md">
+        <div class="w-28 h-28 mx-auto mb-6">
+          <img src="{% static 'images/placeholder.png' %}" alt="No Venues" class="w-full h-full object-contain opacity-70">
+        </div>
+        <h3 class="text-2xl font-bold text-slate-800 mb-3">Belum ada venue yang terdaftar</h3>
+        <p class="text-slate-600 mb-8">Silakan coba lagi nanti</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast" class="fixed top-6 right-6 hidden z-50">
+    <div id="toast-inner" class="bg-white border border-slate-200 shadow-lg rounded-xl px-5 py-4 text-slate-800 font-semibold"></div>
+  </div>
 </div>
 
-<!-- Toast Container -->
-<div id="toastContainer" class="fixed top-6 right-6 space-y-3 z-50"></div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-// ============================
-// Configuration
-// ============================
-const VENUE_API_ENDPOINT = "{% url 'venue:show_json' %}";
-const CURRENT_USER_ID = "{{ user.id|default_if_none:'' }}";
+// ===============================
+// Filtering & Rendering
+// ===============================
+function filterVenues() {
+  const params = new URLSearchParams();
 
-// ============================
-// DOM Elements
-// ============================
-const loadingSpinner = document.getElementById('loading');
-const errorMessage = document.getElementById('error');
-const emptyStateDisplay = document.getElementById('empty');
-const venueGridContainer = document.getElementById('grid');
-const showAllVenuesButton = document.getElementById('filter-all');
-const showMyVenuesButton = document.getElementById('filter-my');
+  const search = $('#search').val();
+  const category = $('#category').val();
+  const minPrice = $('#min_price').val();
+  const maxPrice = $('#max_price').val();
 
-// ============================
-// State
-// ============================
-let activeFilter = 'all';
-let allVenues = [];
+  if (search) params.append('q', search);
+  if (category) params.append('category', category);
+  if (minPrice) params.append('min_price', minPrice);
+  if (maxPrice) params.append('max_price', maxPrice);
 
-// ============================
-// UI Helpers
-// ============================
-function updateFilterButtons() {
-  if (activeFilter === 'all') {
-    showAllVenuesButton.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-red-600 text-white shadow hover:bg-red-700';
-    showMyVenuesButton.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-white text-slate-700 border border-slate-300 hover:bg-red-600 hover:text-white';
-  } else {
-    showMyVenuesButton.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-red-600 text-white shadow hover:bg-red-700';
-    showAllVenuesButton.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-white text-slate-700 border border-slate-300 hover:bg-red-600 hover:text-white';
-  }
-}
-
-function toggleSections({ loading=false, error=false, empty=false, grid=false }) {
-  loadingSpinner.classList.toggle('hidden', !loading);
-  errorMessage.classList.toggle('hidden', !error);
-  emptyStateDisplay.classList.toggle('hidden', !empty);
-  venueGridContainer.classList.toggle('hidden', !grid);
-}
-
-function showToast(title, message, type='success') {
-  const toast = document.createElement('div');
-  const colors = type === 'success'
-    ? 'bg-green-100 border-green-400 text-green-700'
-    : 'bg-red-100 border-red-400 text-red-700';
-  toast.className = `border-l-4 p-4 rounded shadow ${colors} animate-fadeIn`;
-  toast.innerHTML = `<p class="font-semibold">${title}</p><p class="text-sm">${message}</p>`;
-  document.getElementById('toastContainer').appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-// ============================
-// Card Builder
-// ============================
-function buildVenueCard(venue) {
-  const card = document.createElement('article');
-  card.className = "relative rounded-xl border border-slate-200 overflow-hidden group bg-white shadow hover:shadow-lg transition";
-
-  card.innerHTML = `
-    <div class="relative bg-white rounded-xl p-5">
-      <img src="${venue.thumbnail || '{% static "images/placeholder.png" %}'}"
-           alt="${venue.name}"
-           class="w-full h-48 object-cover rounded-lg mb-4">
-      <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
-      <p class="text-slate-600 text-sm mb-2">📍 ${venue.address}</p>
-      <p class="text-sm text-slate-700 mb-2">⭐ ${venue.rating}/5.0</p>
-      <p class="text-lg font-bold text-red-600 mb-4">Rp ${Number(venue.price).toLocaleString('id-ID')}</p>
-      <button class="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 transition"
-        onclick="bookVenue('${venue.id}')">
-        Book Now
-      </button>
-    </div>
-  `;
-  return card;
-}
-
-// ============================
-// Rendering Logic
-// ============================
-function renderVenues() {
-  updateFilterButtons();
-  const filtered = activeFilter === 'all'
-    ? allVenues
-    : allVenues.filter(v => String(v.user_id) === String(CURRENT_USER_ID));
-
-  if (filtered.length === 0) {
-    toggleSections({ empty: true });
-  } else {
-    venueGridContainer.innerHTML = '';
-    filtered.forEach(v => venueGridContainer.appendChild(buildVenueCard(v)));
-    toggleSections({ grid: true });
-  }
-}
-
-// ============================
-// Fetch Venues
-// ============================
-async function fetchVenues() {
-  try {
-    toggleSections({ loading: true });
-    const response = await fetch(VENUE_API_ENDPOINT);
-    if (!response.ok) throw new Error('Failed to fetch venues');
-    const data = await response.json();
-    allVenues = data || [];
-    renderVenues();
-  } catch (err) {
-    errorMessage.textContent = 'Failed to load venues. Please try again later.';
-    toggleSections({ error: true });
-  }
-}
-
-// ============================
-// Booking
-// ============================
-function bookVenue(id) {
-  fetch(`/venue/book/${id}/`, { method: 'POST' })
-    .then(res => res.json())
-    .then(data => showToast('Booking Successful', data.message, 'success'))
-    .catch(() => showToast('Error', 'Booking failed', 'error'));
-}
-
-// ============================
-// Login via AJAX (No Redirect)
-// ============================
-async function loginUser(e) {
-  e.preventDefault();
-  const username = document.getElementById('login-username').value;
-  const password = document.getElementById('login-password').value;
-  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-  const response = await fetch("{% url 'authenticate:login_ajax' %}", {
-    method: "POST",
-    headers: { "X-CSRFToken": csrf, "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+  $.ajax({
+    url: '?' + params.toString(),
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(data) {
+      updateVenues(data.venues);
+    },
+    error: function() {
+      showToast("Error", "Gagal memuat data venue.", "error");
+    }
   });
-
-  const result = await response.json();
-  if (response.ok) {
-    showToast("Success", "Login successful!", "success");
-    setTimeout(() => location.reload(), 1500);
-  } else {
-    showToast("Error", result.message || "Login failed", "error");
-  }
 }
 
-// ============================
-// Events
-// ============================
-showAllVenuesButton.addEventListener('click', () => { activeFilter='all'; renderVenues(); });
-showMyVenuesButton.addEventListener('click', () => { activeFilter='my'; renderVenues(); });
-document.getElementById('refreshVenues').addEventListener('click', fetchVenues);
+function updateVenues(venues) {
+  const container = $('#venues-container');
+  container.empty();
 
-document.addEventListener('DOMContentLoaded', fetchVenues);
+  if (!venues.length) {
+    container.append(`
+      <div class="col-span-full text-center text-slate-500 py-10">
+        <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
+        <p>Tidak ada venue yang sesuai.</p>
+      </div>
+    `);
+    return;
+  }
+
+  venues.forEach(venue => {
+    container.append(`
+      <div class="relative bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
+        <img src="${venue.thumbnail || '/static/default-venue.jpg'}"
+             class="w-full h-56 object-cover" alt="${venue.name}">
+        <div class="p-5">
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${venue.category}</span>
+            <span class="text-rose-600 font-semibold">Rp ${venue.price}</span>
+          </div>
+          <p class="text-sm text-slate-600 mb-1">⭐ ${venue.rating}/5.0</p>
+          <p class="text-sm text-slate-600 mb-4">📍 ${venue.address}</p>
+          <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition"
+                  onclick="bookVenue('${venue.id}')"
+                  ${!venue.is_available ? 'disabled class="bg-gray-300 text-gray-500 cursor-not-allowed"' : ''}>
+            ${venue.is_available ? 'Book Now' : 'Not Available'}
+          </button>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function bookVenue(venueId) {
+  $.ajax({
+    url: `/venue/book-venue/${venueId}/`,
+    method: 'POST',
+    success: function() {
+      showToast("Success", "Booking berhasil!", "success");
+      setTimeout(() => location.reload(), 1200);
+    },
+    error: function(xhr) {
+      showToast("Error", xhr.responseJSON?.message || "Booking gagal.", "error");
+    }
+  });
+}
+
+// ===============================
+// Toast Function
+// ===============================
+function showToast(title, message, type) {
+  const toast = $('#toast');
+  const inner = $('#toast-inner');
+
+  const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
+              : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+              : "bg-yellow-100 text-yellow-800 border-yellow-300";
+
+  inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+  inner.html(`<strong>${title}</strong><br>${message}`);
+  toast.fadeIn();
+
+  setTimeout(() => toast.fadeOut(), 3000);
+}
+
+// ===============================
+// Login AJAX Example
+// ===============================
+async function loginUser(event) {
+  event.preventDefault();
+
+  const formData = new FormData(event.target);
+
+  try {
+    const response = await fetch("{% url 'authenticate:login' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": "{{ csrf_token }}" },
+      body: formData
+    });
+
+    if (response.ok) {
+      showToast("Success", "Login berhasil!", "success");
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      const data = await response.json();
+      showToast("Error", data.message || "Login gagal.", "error");
+    }
+  } catch {
+    showToast("Error", "Terjadi kesalahan saat login.", "error");
+  }
+}
 </script>
+
 {% endblock content %}
