@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>Pembelian Berhasil!</title>
+{% endblock meta %}
+
+{% block content %}
+<style>
+    .rating-input {
+        display: none;
+    }
+
+    .rating-label {
+        font-size: 2.5rem; 
+        color: #d1d5db; 
+        cursor: pointer;
+        transition: color 0.2s ease-in-out;
+    }
+
+    .rating-group .rating-label:hover,
+    .rating-group .rating-label:hover ~ .rating-label {
+        color: #f59e0b; 
+    }
+
+    .rating-group:not(:hover) .rating-input:checked ~ .rating-label,
+    .rating-group:not(:hover) .rating-input:checked + .rating-label {
+        color: #f59e0b; 
+    }
+
+</style>
+
+<div class="bg-gray-50 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+    <!-- ... Konten "Pembelian Berhasil" ... -->
+    <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
+        <svg class="w-20 h-20 text-green-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-900 mt-4 mb-2">Pembelian Berhasil!</h1>
+        <p class="text-gray-600 mb-6">Terima kasih telah berbelanja di ven-shop.</p>
+    </div>
+</div>
+
+<!-- Modal Rating -->
+<div id="rating-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 md:p-8 transform transition-all scale-95 opacity-0" id="modal-content">
+        <h2 class="text-2xl font-bold text-center text-gray-900 mb-4">Beri Rating Produk Ini</h2>
+        <p class="text-center text-gray-600 mb-6">Bagaimana pendapat Anda tentang <strong>{{ product.title }}</strong>?</p>
+        
+        <form action="{% url 'ven_shop:submit_rating' product.id %}" method="POST">
+            {% csrf_token %}
+            
+            <div class="flex justify-center items-center space-x-2 rating-group flex-row-reverse mb-6">
+                
+                <input type="radio" id="star5" name="rating" value="5" class="rating-input" required>
+                <label for="star5" class="rating-label" title="5 bintang">★</label>
+                
+                <input type="radio" id="star4" name="rating" value="4" class="rating-input">
+                <label for="star4" class="rating-label" title="4 bintang">★</label>
+                
+                <input type="radio" id="star3" name="rating" value="3" class="rating-input">
+                <label for="star3" class="rating-label" title="3 bintang">★</label>
+                
+                <input type="radio" id="star2" name="rating" value="2" class="rating-input">
+                <label for="star2" class="rating-label" title="2 bintang">★</label>
+                
+                <input type="radio" id="star1" name="rating" value="1" class="rating-input">
+                <label for="star1" class="rating-label" title="1 bintang">★</label>
+            </div>
+            
+            <button 
+                type="submit"
+                class="w-full py-3 px-6 bg-[#D84040] text-white font-bold text-lg rounded-lg shadow-md 
+                       hover:bg-[#8E1616] transition-colors duration-200 ease-in-out
+                       focus:outline-none focus:ring-2 focus:ring-[#D84040] focus:ring-opacity-50">
+                Kirim Rating
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        const modal = document.getElementById('rating-modal');
+        const modalContent = document.getElementById('modal-content');
+        
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        }, 1500);
+    });
+</script>
+{% endblock content %}
+
