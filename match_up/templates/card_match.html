@@ -1,0 +1,50 @@
+<article class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden max-w-sm">
+    <div class="aspect-[16/9] relative overflow-hidden">
+        {% if match.venue.thumbnail %}
+            <img src="{{ match.venue.thumbnail.url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
+        {% else %}
+            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-400">No Image</span>
+            </div>
+        {% endif %}
+
+        <div class="absolute top-3 left-3">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-600 text-white">
+                ⭐ {{ match.get_difficulty_level_display }}
+            </span>
+        </div>
+    </div>
+
+    <div class="p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wider">{{ match.venue.get_category_display }}</p>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2 truncate">
+            {{ match.venue.name }}
+        </h3>
+
+        <hr class="my-3 border-gray-100">
+
+        <div class="space-y-2 text-sm text-gray-600">
+            <div class="flex items-center">
+                <span class="w-5 text-center mr-2">👤</span>
+                <span>Dibuat oleh: <strong>{{ match.creator.username }}</strong></span>
+            </div>
+            <div class="flex items-center">
+                <span class="w-5 text-center mr-2">📅</span>
+                <span>{{ match.start_time|date:"l, j F Y" }}</span>
+            </div>
+            <div class="flex items-center">
+                <span class="w-5 text-center mr-2">🕒</span>
+                <span>{{ match.start_time|time:"H:i" }} - {{ match.end_time|time:"H:i" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+        <span class="text-base font-bold text-gray-800">
+            Slot {{ match.slot_terisi }}/{{ match.slot_total }}
+        </span>
+        <a href="{% url 'matchup:show_match_detail' match.id %}" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
+            Details
+        </a>
+    </div>
+</article>
