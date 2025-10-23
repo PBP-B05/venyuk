@@ -1,0 +1,52 @@
+{# templates/versus/create.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="w-full h-[200px] bg-cover bg-center"
+     style="background-image:url('{% static "images/hero_versus.jpg" %}');">
+  <div class="w-full h-full bg-black/20"></div>
+</div>
+
+<div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h1 class="text-2xl font-semibold mb-1">Buat Matchup</h1>
+    <p class="text-gray-500 mb-6">Pilih olahraga, masukkan waktu & harga per orang.</p>
+
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Olahraga</label>
+        {{ form.sport }}
+        {% if form.sport.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.sport.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Waktu mulai</label>
+        {{ form.start_at }}
+        {% if form.start_at.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.start_at.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Harga (per orang)</label>
+        {{ form.cost_per_person }}
+        {% if form.cost_per_person.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.cost_per_person.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="{% url 'versus:list' %}" class="px-4 py-2 rounded-lg bg-gray-100">Batal</a>
+        <button class="px-5 py-2 rounded-full bg-rose-500 text-white">Buat Matchup</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

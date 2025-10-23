@@ -1,86 +1,58 @@
 # versus/models.py
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
+from django.urls import reverse
 
 class SportChoices(models.TextChoices):
-    SEPAK_BOLA = ("sepak bola", "Sepak Bola")
-    FUTSAL = ("futsal", "Futsal")
-    MINI_SOCCER = ("mini soccer", "Mini Soccer")
-    BASKETBALL = ("basketball", "Basketball")
-    TENNIS = ("tennis", "Tennis")
-    BADMINTON = ("badminton", "Badminton")
-    PADEL = ("padel", "Padel")
-    PICKLE_BALL = ("pickle ball", "Pickle Ball")
-    SQUASH = ("squash", "Squash")
-    VOLI = ("voli", "Voli")
-    BILIARD = ("biliard", "Biliard")
-    GOLF = ("golf", "Golf")
-    SHOOTING = ("shooting", "Shooting")
-    TENNIS_MEJA = ("tennis meja", "Tennis Meja")
+    SEPAK_BOLA   = "sepak bola", "Sepak Bola"
+    FUTSAL       = "futsal", "Futsal"
+    MINI_SOCCER  = "mini soccer", "Mini Soccer"
+    BASKETBALL   = "basketball", "Basketball"
+    TENNIS       = "tennis", "Tennis"
+    BADMINTON    = "badminton", "Badminton"
+    PADEL        = "padel", "Padel"
+    PICKLE_BALL  = "pickle ball", "Pickle Ball"
+    SQUASH       = "squash", "Squash"
+    VOLI         = "voli", "Voli"
+    BILIARD      = "biliard", "Biliard"
+    GOLF         = "golf", "Golf"
+    SHOOTING     = "shooting", "Shooting"
+    TENNIS_MEJA  = "tennis meja", "Tennis Meja"
 
 class Community(models.Model):
-    """Akun komunitas (punya 1 owner User)."""
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=120, unique=True)
-    # kalau komunitas multi-olahraga: ganti ke ManyToMany.
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="communities")
+    name = models.CharField(max_length=120)
     primary_sport = models.CharField(max_length=20, choices=SportChoices.choices)
-    logo = models.ImageField(upload_to="community_logo/", blank=True, null=True)
+    bio = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
 
 class Challenge(models.Model):
-    """Tantangan sparing yang 'OPEN' sampai ada lawan yang join."""
     class Status(models.TextChoices):
-        OPEN = ("OPEN", "Open")
-        MATCHED = ("MATCHED", "Matched")
-        CANCELLED = ("CANCELLED", "Cancelled")
-        DONE = ("DONE", "Done")
+        OPEN = "open", "Open"
+        CLOSED = "closed", "Closed"
+        COMPLETED = "completed", "Completed"
 
-    title = models.CharField(max_length=180)
+    title = models.CharField(max_length=160)
     sport = models.CharField(max_length=20, choices=SportChoices.choices)
     host = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="hosted_challenges")
-    venue = models.ForeignKey("venues.Venue", on_delete=models.SET_NULL, null=True, blank=True)
+    opponent = models.ForeignKey(Community, on_delete=models.SET_NULL, null=True, blank=True, related_name="joined_challenges")
+
     start_at = models.DateTimeField()
-    cost_per_person = models.PositiveIntegerField(default=0)  # Rp
+    cost_per_person = models.PositiveIntegerField(null=True, blank=True)  # rupiah/orang
+    banner_url = models.URLField(blank=True)
+    description = models.TextField(blank=True)
+
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
-
-    def clean(self):
-        if self.start_at <= timezone.now():
-            raise ValidationError("Jadwal harus di masa depan.")
-        if self.host.primary_sport != self.sport:
-            raise ValidationError("Sport challenge harus sesuai sport komunitas host.")
+        ordering = ["start_at"]
 
     def __str__(self):
-        return f"{self.title} ({self.get_sport_display()})"
+        return f"{self.title} • {self.get_sport_display()}"
 
-class Participation(models.Model):
-    """Siapa saja yang terlibat pada suatu challenge."""
-    class Role(models.TextChoices):
-        HOST = ("HOST", "Host")
-        GUEST = ("GUEST", "Guest")
+    def get_absolute_url(self):
+        return reverse("versus:detail", args=[self.pk])
 
-    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="participants")
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="participations")
-    role = models.CharField(max_length=5, choices=Role.choices)
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("challenge", "community")
-
-    def clean(self):
-        # Pastikan sport community cocok dengan sport challenge
-        if self.community.primary_sport != self.challenge.sport:
-            raise ValidationError("Sport komunitas harus sesuai dengan sport challenge.")
-        # Tidak boleh host join sebagai guest
-        if self.role == self.Role.GUEST and self.challenge.host_id == self.community_id:
-            raise ValidationError("Host tidak bisa join sebagai Guest.")
-
-    def __str__(self):
-        return f"{self.community} -> {self.challenge} ({self.role})"

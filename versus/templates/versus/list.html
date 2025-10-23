@@ -1,0 +1,155 @@
+{# templates/versus/list.html #}
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block content %}
+
+{# ===== HERO SECTION ===== #}
+<div class="w-full h-[260px] md:h-[300px] bg-cover bg-center"
+     style="background-image:url('{% static "images/hero_versus.jpg" %}');">
+  <div class="w-full h-full bg-black/20"></div>
+</div>
+
+{# ===== PAGE WRAPPER ===== #}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
+
+  {# ===== HEADER BAR: Judul + Filter + Create ===== #}
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <h1 class="text-xl md:text-2xl font-semibold bg-white px-3 py-2 rounded-lg shadow">
+      Versus
+    </h1>
+
+    <div class="flex items-center gap-2">
+      <form method="get" class="hidden sm:flex items-center gap-2">
+        <select name="sport"
+                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
+          <option value="">Semua Olahraga</option>
+          {% if sports %}
+            {% for val,label in sports %}
+              <option value="{{ val }}" {% if sport_selected == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          {% endif %}
+        </select>
+        <button class="rounded-full bg-rose-500 text-white px-4 py-2 text-sm">
+          Filter
+        </button>
+      </form>
+
+      <a href="{% url 'versus:create' %}"
+         class="inline-flex items-center rounded-full bg-rose-600 text-white px-4 py-2 text-sm hover:bg-rose-700 transition">
+        + Create VERSUS
+      </a>
+    </div>
+  </div>
+
+  {# ===== FILTER BAR MOBILE ===== #}
+  <form method="get" class="sm:hidden mt-4 flex items-center gap-2">
+    <select name="sport"
+            class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
+      <option value="">Semua Olahraga</option>
+      {% if sports %}
+        {% for val,label in sports %}
+          <option value="{{ val }}" {% if sport_selected == val %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      {% endif %}
+    </select>
+    <button class="rounded-lg bg-rose-500 text-white px-4 py-2 text-sm">
+      Filter
+    </button>
+  </form>
+
+  {# ===== GRID LIST / EMPTY STATE ===== #}
+  {% if challenges %}
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for ch in challenges %}
+        <div class="bg-white rounded-2xl shadow p-6">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <img src="{% static 'images/logos/realmadrid.png' %}" alt=""
+                   class="w-12 h-12 object-contain">
+              <div>
+                <p class="text-sm text-gray-500">
+                  {{ ch.get_sport_display|default:ch.sport }}
+                </p>
+                <a href="{% url 'versus:detail' ch.pk %}" class="block">
+                  <h3 class="text-lg font-semibold leading-tight hover:underline">
+                    {{ ch.title }}
+                  </h3>
+                </a>
+              </div>
+            </div>
+
+            {% if ch.status %}
+              <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1">
+                {{ ch.get_status_display|default:ch.status }}
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="mt-4 space-y-3 text-sm text-gray-700">
+            <div class="flex items-center gap-2">
+              <span>🗓️</span>
+              <span>{{ ch.start_at|date:"j F Y • H:i" }}</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span>💲</span>
+              {% if ch.cost_per_person %}
+                <span>Rp {{ ch.cost_per_person|intcomma }} / orang</span>
+              {% else %}
+                <span>Gratis</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mt-5 flex items-center justify-between">
+            <a href="{% url 'versus:detail' ch.pk %}"
+               class="text-sm text-rose-600 hover:text-rose-700 font-medium">
+              Lihat detail →
+            </a>
+
+            {# (opsional) tombol join di list; hanya muncul jika open #}
+            {% if ch.status|lower == "open" %}
+              <form method="post" action="{% url 'versus:join' ch.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="rounded-full bg-rose-600 text-white px-4 py-2 text-sm hover:bg-rose-700 transition">
+                  Join
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mt-10 bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+      <div class="text-4xl mb-2">🕳️</div>
+      <h3 class="text-lg font-semibold">Belum ada Versus yang terbuka</h3>
+      <p class="text-gray-600 mt-1">Coba ubah filter, atau buat Versus baru sekarang.</p>
+
+      <div class="mt-4">
+        <a href="{% url 'versus:create' %}"
+           class="inline-flex items-center rounded-full bg-rose-600 text-white px-5 py-2 text-sm hover:bg-rose-700 transition">
+           + Create VERSUS
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{# ===== FLOATING CTA MOBILE ===== #}
+<a href="{% url 'versus:create' %}"
+   class="fixed bottom-4 right-4 sm:hidden shadow-lg rounded-full bg-rose-600 text-white px-5 py-3 text-sm">
+   + Create VERSUS
+</a>
+
+{% endblock content %}
+
+
+
+

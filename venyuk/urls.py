@@ -14,9 +14,18 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.views.generic import RedirectView
+from django.contrib.auth.views import LoginView, LogoutView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("versus/", include("versus.urls")),
+    path("", RedirectView.as_view(pattern_name="versus:list", permanent=False)),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("accounts/login/", LoginView.as_view(template_name="registration/login.html"), name="login"),
+    path("accounts/logout/", LogoutView.as_view(), name="logout"),
 ]
+

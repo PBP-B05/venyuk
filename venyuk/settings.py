@@ -42,12 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main',
-    'venue',
-    'ven_shop',
-    'match_up',
-    'promo',
-    'blog',
+    "django.contrib.humanize",
     'versus',
 ]
 
@@ -66,7 +61,7 @@ ROOT_URLCONF = 'venyuk.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
