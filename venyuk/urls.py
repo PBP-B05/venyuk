@@ -20,9 +20,4 @@ from django.urls import path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('promo/', include('promo.urls')),
-    path(' ', include('venue.urls')),
-    path('shop/', include('ven-shop.urls')),
-    path('match/', include('versus.urls')),
-    path('play/', include('match_up.urls')),
-    path('articles/', include('blog.urls')),
 ]
