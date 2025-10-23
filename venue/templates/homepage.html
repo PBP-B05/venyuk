@@ -16,51 +16,93 @@
 
         body {
             background-color: var(--light);
-            color: var(--dark);
+            min-height: 100vh;
         }
 
         .navbar {
             background-color: var(--dark);
+            padding: 1rem 0;
         }
 
-        .banner {
-            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/banner.jpg');
-            height: 500px;
-            background-position: center;
+        .hero-banner {
+            background: linear-gradient(rgba(29, 22, 22, 0.7), rgba(142, 22, 22, 0.7)), 
+                        url('/static/banner.jpg') no-repeat center center;
             background-size: cover;
-            color: white;
-            text-align: center;
+            height: 60vh;
             display: flex;
             align-items: center;
-            justify-content: center;
+            color: white;
+            text-align: center;
         }
 
-        .search-section {
+        .hero-banner h1 {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .filter-section {
             background-color: var(--primary);
-            padding: 20px 0;
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--dark);
+            border-radius: 5px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 0.2rem rgba(216, 64, 64, 0.25);
         }
 
         .btn-primary {
             background-color: var(--secondary);
             border-color: var(--secondary);
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s ease;
         }
 
         .btn-primary:hover {
             background-color: var(--primary);
-            border-color: var(--primary);
+            transform: translateY(-2px);
         }
 
-        .card {
-            transition: transform 0.3s;
+        .venue-card {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 2rem;
         }
 
-        .card:hover {
+        .venue-card:hover {
             transform: translateY(-5px);
         }
 
         .venue-card img {
             height: 200px;
             object-fit: cover;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
@@ -70,22 +112,22 @@
         <div class="container">
             <a class="navbar-brand" href="/">VenYuk!</a>
             <div class="d-flex">
-                <a href="/authenticate/login" class="btn btn-primary">Masuk</a>
+                <a href="/authenticate/login/" class="btn btn-primary">Masuk</a>
             </div>
         </div>
     </nav>
 
-    <!-- Banner -->
-    <div class="banner">
+    <!-- Hero Banner -->
+    <div class="hero-banner">
         <div class="container">
-            <h1 class="display-4">BOOKING VENUE di VenYuk!, YUK!</h1>
-            <p class="lead">Temukan dan booking venue olahraga terbaik dengan mudah</p>
-            <button class="btn btn-primary btn-lg">BOOKING SEKARANG!</button>
+            <h1>BOOKING VENUE di VenYuk!</h1>
+            <p class="lead mb-4">Temukan dan booking venue olahraga terbaik dengan mudah</p>
+            <a href="#venues" class="btn btn-primary btn-lg">BOOKING SEKARANG!</a>
         </div>
     </div>
 
-    <!-- Search & Filter Section -->
-    <div class="search-section">
+    <!-- Filter Section -->
+    <div class="filter-section">
         <div class="container">
             <div class="row g-3">
                 <div class="col-md-4">
@@ -112,55 +154,50 @@
         </div>
     </div>
 
-    <!-- Venue Cards -->
-    <div class="container py-5">
-        <div class="row g-4" id="venues-container">
-            {% for venue in venues %}
-            <div class="col-md-4">
-                <div class="card venue-card">
-                    <img src="{{ venue.thumbnail.url|default:'/static/default-venue.jpg' }}" class="card-img-top" alt="{{ venue.name }}">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ venue.name }}</h5>
-                        <p class="card-text">
-                            <span class="badge bg-primary">{{ venue.get_category_display }}</span>
-                            <span class="badge bg-secondary">Rp {{ venue.price|floatformat:0 }}</span>
-                        </p>
-                        <p class="card-text">⭐ {{ venue.rating }}/5.0</p>
-                        <p class="card-text small">📍 {{ venue.address }}</p>
-                        <button class="btn btn-primary w-100" onclick="bookVenue('{{ venue.id }}')">Book Now</button>
+    <!-- Venues Section -->
+    <div class="container py-5" id="venues">
+        {% if venues %}
+            <div class="row g-4" id="venues-container">
+                {% for venue in venues %}
+                <div class="col-md-4">
+                    <div class="venue-card card">
+                        <img src="{{ venue.thumbnail.url|default:'/static/default-venue.jpg' }}" 
+                             class="card-img-top" 
+                             alt="{{ venue.name }}">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">{{ venue.name }}</h5>
+                            <div class="mb-3">
+                                <span class="badge bg-primary">{{ venue.get_category_display }}</span>
+                                <span class="badge bg-secondary">Rp {{ venue.price|floatformat:0 }}</span>
+                            </div>
+                            <p class="card-text mb-2">⭐ {{ venue.rating }}/5.0</p>
+                            <p class="card-text small mb-3">📍 {{ venue.address }}</p>
+                            <button class="btn btn-primary w-100" 
+                                    onclick="bookVenue('{{ venue.id }}')"
+                                    {% if not venue.is_available %}disabled{% endif %}>
+                                {% if venue.is_available %}Book Now{% else %}Not Available{% endif %}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Pagination -->
-        <nav class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if venues.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ venues.previous_page_number }}">Previous</a>
-                    </li>
-                {% endif %}
-                
-                {% for i in paginator.page_range %}
-                    <li class="page-item {% if venues.number == i %}active{% endif %}">
-                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-                    </li>
                 {% endfor %}
-                
-                {% if venues.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ venues.next_page_number }}">Next</a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <img src="/static/placeholder.png" alt="No Venues" class="mb-4" style="max-width: 200px; opacity: 0.5;">
+                <h3 class="text-muted">Belum ada venue yang terdaftar</h3>
+                <p class="text-muted">Silakan coba lagi nanti</p>
+            </div>
+        {% endif %}
     </div>
+
+    <!-- Alert Messages -->
+    <div class="alert alert-success" id="success-alert" role="alert"></div>
+    <div class="alert alert-danger" id="error-alert" role="alert"></div>
 
     <script>
         function filterVenues() {
-            let params = new URLSearchParams();
+            const params = new URLSearchParams();
             
             const search = $('#search').val();
             const category = $('#category').val();
@@ -176,7 +213,7 @@
                 url: '?' + params.toString(),
                 headers: {'X-Requested-With': 'XMLHttpRequest'},
                 success: function(data) {
-                    updateVenues(data.results);
+                    updateVenues(data.venues);
                 }
             });
         }
@@ -188,17 +225,23 @@
             venues.forEach(venue => {
                 container.append(`
                     <div class="col-md-4">
-                        <div class="card venue-card">
-                            <img src="${venue.thumbnail || '/static/default-venue.jpg'}" class="card-img-top" alt="${venue.name}">
+                        <div class="venue-card card">
+                            <img src="${venue.thumbnail || '/static/default-venue.jpg'}" 
+                                 class="card-img-top" 
+                                 alt="${venue.name}">
                             <div class="card-body">
-                                <h5 class="card-title">${venue.name}</h5>
-                                <p class="card-text">
+                                <h5 class="card-title fw-bold">${venue.name}</h5>
+                                <div class="mb-3">
                                     <span class="badge bg-primary">${venue.category}</span>
                                     <span class="badge bg-secondary">Rp ${venue.price}</span>
-                                </p>
-                                <p class="card-text">⭐ ${venue.rating}/5.0</p>
-                                <p class="card-text small">📍 ${venue.address}</p>
-                                <button class="btn btn-primary w-100" onclick="bookVenue('${venue.id}')">Book Now</button>
+                                </div>
+                                <p class="card-text mb-2">⭐ ${venue.rating}/5.0</p>
+                                <p class="card-text small mb-3">📍 ${venue.address}</p>
+                                <button class="btn btn-primary w-100" 
+                                        onclick="bookVenue('${venue.id}')"
+                                        ${!venue.is_available ? 'disabled' : ''}>
+                                    ${venue.is_available ? 'Book Now' : 'Not Available'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -208,15 +251,22 @@
 
         function bookVenue(venueId) {
             $.ajax({
-                url: `/venue/book/${venueId}`,
+                url: `/venue/book-venue/${venueId}/`,
                 method: 'POST',
                 success: function(response) {
-                    alert('Booking successful!');
+                    showAlert('success', 'Booking successful!');
+                    setTimeout(() => location.reload(), 1500);
                 },
                 error: function(xhr) {
-                    alert('Booking failed: ' + xhr.responseJSON.error);
+                    showAlert('error', xhr.responseJSON?.message || 'Booking failed');
                 }
             });
+        }
+
+        function showAlert(type, message) {
+            const alert = type === 'success' ? $('#success-alert') : $('#error-alert');
+            alert.text(message).fadeIn();
+            setTimeout(() => alert.fadeOut(), 3000);
         }
     </script>
 </body>

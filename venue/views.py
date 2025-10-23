@@ -1,25 +1,28 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 from .models import Venue
-import json
 
 # Helper Functions
 def apply_filters(queryset, request):
-    """Apply all filters to the queryset"""
+    """Apply filters to the queryset"""
     # Search filter
-    q = request.GET.get('q', '').strip()
-    if q:
+    query = request.GET.get('q', '').strip()
+    if query:
         queryset = queryset.filter(
-            Q(name__icontains=q) |
-            Q(address__icontains=q)
+            Q(name__icontains=query) |
+            Q(address__icontains=query)
         )
 
-    # Price filter
+    # Category filter
+    category = request.GET.get('category')
+    if category:
+        queryset = queryset.filter(category=category)
+
+    # Price range filter
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
     if min_price:
@@ -33,12 +36,6 @@ def apply_filters(queryset, request):
         except ValueError:
             pass
 
-    # Category and availability filters
-    category = request.GET.get('category')
-    if category:
-        queryset = queryset.filter(category=category)
-    queryset = queryset.filter(is_available=True)
-
     # Rating filter
     min_rating = request.GET.get('min_rating')
     if min_rating:
@@ -49,100 +46,99 @@ def apply_filters(queryset, request):
 
     return queryset
 
-def apply_sorting(queryset, sort_param):
+def apply_sorting(queryset, sort_by):
     """Apply sorting to the queryset"""
     sort_options = {
         'price_asc': 'price',
         'price_desc': '-price',
-        'newest': '-created_at',
-        'rating': '-rating'
+        'rating_desc': '-rating',
+        'newest': '-created_at'
     }
-    if sort_param in sort_options:
-        return queryset.order_by(sort_options[sort_param])
+    
+    if sort_by in sort_options:
+        return queryset.order_by(sort_options[sort_by])
     return queryset
 
 # View Functions
 @csrf_exempt
-@login_required(login_url='/authenticate/login/')
 def home_section(request):
-    """Main view for homepage with venue listing"""
-    # Get base queryset
-    qs = Venue.objects.all()
+    """Main view for homepage"""
+    venues = Venue.objects.filter(is_available=True)
     
     # Apply filters
-    qs = apply_filters(qs, request)
+    venues = apply_filters(venues, request)
     
     # Apply sorting
-    sort = request.GET.get('sort')
-    qs = apply_sorting(qs, sort)
+    sort_by = request.GET.get('sort')
+    venues = apply_sorting(venues, sort_by)
 
-    # Pagination
-    per_page = 12
-    page = request.GET.get('page', 1)
-    paginator = Paginator(qs, per_page)
-    try:
-        venues_page = paginator.page(page)
-    except (PageNotAnInteger, EmptyPage):
-        venues_page = paginator.page(1)
-
-    # Handle AJAX requests
+    # Handle AJAX request for search/filter
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({
-            'results': [
-                {
-                    'id': str(v.id),
-                    'name': v.name,
-                    'category': v.category,
-                    'price': v.price,
-                    'rating': v.rating,
-                    'address': v.address,
-                    'thumbnail': v.thumbnail.url if v.thumbnail else None,
-                } for v in venues_page
-            ],
-            'page': venues_page.number,
-            'num_pages': paginator.num_pages,
-            'total': paginator.count,
-        })
+        data = [{
+            'id': str(venue.id),
+            'name': venue.name,
+            'category': venue.get_category_display(),
+            'price': venue.price,
+            'rating': venue.rating,
+            'address': venue.address,
+            'thumbnail': venue.thumbnail.url if venue.thumbnail else None,
+            'is_available': venue.is_available
+        } for venue in venues]
+        
+        return JsonResponse({'venues': data})
 
     # Regular page render
-    return render(request, 'homepage.html', {
-        'venues': venues_page,
-        'paginator': paginator,
-        'query_params': request.GET,
+    context = {
+        'venues': venues,
         'categories': dict(Venue.CATEGORY_CHOICES),
-    })
+        'query_params': request.GET,
+    }
+    return render(request, 'homepage.html', context)
 
-@login_required(login_url='/login/')
+@login_required(login_url='/authenticate/login/')
 @csrf_exempt
 def book_venue(request, venue_id):
     """Handle venue booking"""
     if request.method != 'POST':
         return HttpResponseBadRequest('Invalid request method')
-    
+
     venue = get_object_or_404(Venue, id=venue_id)
+    
     if not venue.is_available:
-        return JsonResponse({'error': 'Venue not available'}, status=400)
-    
-    # Add your booking logic here
-    # ...
-    
-    return JsonResponse({'success': True})
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Venue is not available'
+        }, status=400)
+
+    # Add booking logic here
+    try:
+        # Your booking logic here
+        # For example:
+        venue.is_available = False
+        venue.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Booking successful',
+            'venue_name': venue.name
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 # API Endpoints
 @csrf_exempt
 def get_venues_json(request):
-    """API endpoint for venues data"""
+    """Return all venues as JSON"""
     venues = Venue.objects.filter(is_available=True)
-    return HttpResponse(
-        serializers.serialize('json', venues),
-        content_type='application/json'
-    )
+    data = serializers.serialize('json', venues)
+    return HttpResponse(data, content_type='application/json')
 
 @csrf_exempt
 def get_venue_by_id(request, id):
-    """API endpoint for single venue data"""
+    """Return specific venue as JSON"""
     venue = get_object_or_404(Venue, pk=id)
-    return HttpResponse(
-        serializers.serialize('json', [venue]),
-        content_type='application/json'
-    )
+    data = serializers.serialize('json', [venue])
+    return HttpResponse(data, content_type='application/json')
