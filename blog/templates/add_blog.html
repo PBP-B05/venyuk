@@ -1,0 +1,47 @@
+{% extends 'base.html' %} 
+{% block content %}
+<style>
+  input[type="text"],input[type="url"], textarea, select, input[type="file"] {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+  }
+  input:focus, textarea:focus, select:focus, input[type="url"]:focus {
+    outline: none;
+    border-color: #b91c1c;
+  }
+</style>
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-center mb-8 text-red-700">Tell Us What's On Your Mind Today</h1>
+  <div class="text-center text-gray-700 mb-6 text-lg">
+    Share your thoughts, stories, or experiences with the Venyuk community!
+  </div>
+  <form method="POST" class="bg-white rounded-lg shadow-md p-8">
+    {% csrf_token %}
+    <div class="space-y-6">
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ field.label }}
+          </label>
+          <div>
+            {{ field }}
+          </div>
+          {% if field.help_text %}
+            <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+          {% endif %}
+          {% for error in field.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="flex justify-end">
+        <input type="submit" value="Add Blog" class="bg-red-700 text-white px-6 py-2 rounded-lg font-semibold cursor-pointer hover:bg-red-800 transition"/>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

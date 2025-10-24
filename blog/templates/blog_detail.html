@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<p><a href="{% url 'blog:show_blogmain' %}"><button>← Back to Blog Main</button></a></p>
+
+<h1>{{ blog.title }}</h1>
+<p><b>{{ blog.get_category_display }}</b>| 
+    <i>{{ blog.created_at|date:"d M Y, H:i" }}</i> |
+    Views: {{ blog.blog_views }} <p>
+
+{% if blog.thumbnail %}
+    <img src="{{ blog.thumbnail }}" alt="Blog thumbnail" width="300">
+    <br /><br />
+{% endif %}
+
+<p>{{ blog.content }}</p>
+
+<hr>
+<h2>Comments</h2>
+{% for comment in comments %}
+  <div class="mb-4 p-2 border rounded">
+    <b>{{ comment.user.username }}</b> <span class="text-xs text-gray-500">{{ comment.created_at|date:"d M Y, H:i" }}</span>
+    <p>{{ comment.content }}</p>
+  </div>
+{% empty %}
+  <p>No comments yet.</p>
+{% endfor %}
+
+<!-- {% if user.is_authenticated %} -->
+<form method="POST" class="mt-4">
+{% csrf_token %}
+{{ form.content.label_tag }}<br>
+{{ form.content }}
+<button type="submit" class="bg-red-700 text-white px-4 py-2 rounded mt-2">Add Comment</button>
+</form>
+<!-- {% else %}
+  <p class="mt-4">Login to add a comment.</p> -->
+<!-- {% endif %} -->
+{% endblock content %}  

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block meta %}
+<title>VENYUK</title>
+{% endblock meta %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-center mb-8">BLOG</h1>
+  
+  <div class="flex justify-center gap-6 mb-8">
+    <a href="?filter=e-sports">
+      <button class="{% if active_filter == 'e-sports' %}bg-white text-red-700 border-2 border-red-700{% else %}bg-red-700 text-white{% endif %} px-6 py-2 rounded-lg font-semibold">E-Sports</button>
+    </a>
+    <a href="?filter=sports">
+      <button class="{% if active_filter == 'sports' %}bg-white text-red-700 border-2 border-red-700{% else %}bg-red-700 text-white{% endif %} px-6 py-2 rounded-lg font-semibold">Sports</button>
+    </a>
+    <a href="?filter=community posts">
+      <button class="{% if active_filter == 'community posts' %}bg-white text-red-700 border-2 border-red-700{% else %}bg-red-700 text-white{% endif %} px-6 py-2 rounded-lg font-semibold">Community Posts</button>
+    </a>
+    <a href="?filter=all">
+      <button class="{% if active_filter == 'all' %}bg-white text-red-700 border-2 border-red-700{% else %}bg-red-700 text-white{% endif %} px-6 py-2 rounded-lg font-semibold">All Blogs</button>
+    </a>
+    <a href="?filter=my_blog">
+      <button class="{% if active_filter == 'my_blog' %}bg-white text-red-700 border-2 border-red-700{% else %}bg-red-700 text-white{% endif %} px-6 py-2 rounded-lg font-semibold">My Blog</button>
+    </a>
+    <a href="{% url 'blog:add_blog' %}">
+      <button class="bg-red-700 text-white px-6 py-2 rounded-lg font-semibold">+Add Blog</button>
+    </a>
+  </div>
+
+  {% if not posts %}
+    <p class="text-center text-gray-500">Belum ada Blog yang ditulis huhu.</p>
+  {% else %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      {% for blog in posts %}
+      <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+        {% if blog.thumbnail %}
+          <img src="{{ blog.thumbnail }}" alt="thumbnail" class="w-full h-40 object-cover">
+        {% else %}
+          <div class="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">No Image</div>
+        {% endif %}
+        <div class="p-4 flex-1 flex flex-col">
+          <div class="text-xs text-gray-500 mb-1">Views: {{ blog.blog_views }}</div>
+          <h2 class="text-lg font-semibold mb-2">
+            <a href="{% url 'blog:show_blog' blog.id %}">{{ blog.title }}</a>
+          </h2>
+          <div class="text-sm text-red-700 font-bold mb-1">{{ blog.get_category_display }}</div>
+          <div class="text-xs text-gray-400 mb-2">{{ blog.created_at|date:"d M Y, H:i" }}</div>
+          <div class="text-sm mb-2">{{ blog.content|truncatewords:20 }}...</div>
+          <div class="mt-auto">
+            <a href="{% url 'blog:show_blog' blog.id %}">
+              <button class="bg-red-600 text-white px-4 py-1 rounded mt-2 w-full">Read More</button>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}
