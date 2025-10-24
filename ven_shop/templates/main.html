@@ -31,7 +31,6 @@
 
 {% block content %}
 <div class="bg-white min-h-screen">
-  {% include 'navbar.html' %}
   <!-- Hero Section with Carousel -->
   <section class="relative text-white overflow-hidden">
     <div class="carousel-container relative">
@@ -64,7 +63,7 @@
               <div class="lg:w-1/2">
                 <h2 class="text-5xl font-bold mb-4">
                   <span class="text-white block">Gear Terbaik</span>
-                  <span class="text-white">Untuk Atletmu</span>
+                  <span class="text-white">Untuk Olahraga</span>
                 </h2>
                 <p class="text-xl mb-8 text-white">Koleksi lengkap perlengkapan olahraga dari brand ternama.</p>
                 <a href="#products-section" class="bg-white text-[#D84040] px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block scroll-to-products">
@@ -151,6 +150,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Mobile Sidebar Toggle -->
+  <div class="lg:hidden fixed bottom-4 right-4 z-50">
+    <button id="mobileSidebarToggle" class="bg-[#D84040] text-white p-4 rounded-full shadow-lg hover:bg-[#8E1616] transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="mobileSidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
+    <div class="w-64 h-full bg-white overflow-y-auto">
+      <div class="p-4 flex justify-between items-center border-b">
+        <h3 class="font-bold text-lg">Filter Kategori</h3>
+        <button id="closeMobileSidebar" class="text-gray-600 hover:text-gray-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      {% include 'sidebar.html' %}
+    </div>
+  </div>
+</div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
