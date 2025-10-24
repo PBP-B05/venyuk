@@ -1,273 +1,217 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VenYuk! - Find Your Perfect Venue</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --dark: #1D1616;
-            --primary: #8E1616;
-            --secondary: #D84040;
-            --light: #EEEEEE;
-        }
+{% extends 'base.html' %}
+{% load static %}
 
-        body {
-            background-color: var(--light);
-            min-height: 100vh;
-        }
+{% block meta %}
+<title>VenYuk! - Find Your Perfect Venue</title>
+{% endblock meta %}
 
-        .navbar {
-            background-color: var(--dark);
-            padding: 1rem 0;
-        }
+{% block content %}
+{% include 'navbar.html' %}
 
-        .hero-banner {
-            background: linear-gradient(rgba(29, 22, 22, 0.7), rgba(142, 22, 22, 0.7)), 
-                        url('/static/banner.jpg') no-repeat center center;
-            background-size: cover;
-            height: 60vh;
-            display: flex;
-            align-items: center;
-            color: white;
-            text-align: center;
-        }
-
-        .hero-banner h1 {
-            font-size: 3.5rem;
-            font-weight: bold;
-            margin-bottom: 1.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .filter-section {
-            background-color: var(--primary);
-            padding: 1.5rem 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .form-control, .form-select {
-            border: 1px solid var(--dark);
-            border-radius: 5px;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 0.2rem rgba(216, 64, 64, 0.25);
-        }
-
-        .btn-primary {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
-            padding: 0.5rem 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .venue-card {
-            border: none;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-            margin-bottom: 2rem;
-        }
-
-        .venue-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .venue-card img {
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .badge {
-            padding: 0.5rem 1rem;
-            margin-right: 0.5rem;
-        }
-
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">VenYuk!</a>
-            <div class="d-flex">
-                <a href="/authenticate/login/" class="btn btn-primary">Masuk</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Banner -->
-    <div class="hero-banner">
-        <div class="container">
-            <h1>BOOKING VENUE di VenYuk!</h1>
-            <p class="lead mb-4">Temukan dan booking venue olahraga terbaik dengan mudah</p>
-            <a href="#venues" class="btn btn-primary btn-lg">BOOKING SEKARANG!</a>
-        </div>
+<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
+  <!-- Hero Section -->
+  <section class="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white"
+          style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static 'images/banner_homepage.jpg' %});">
+    <div class="px-6">
+      <h1 class="text-5xl sm:text-6xl font-extrabold mb-4 tracking-tight">BOOKING VENUE di VenYuk!</h1>
+      <p class="text-lg sm:text-xl text-slate-200 mb-6">Temukan dan booking venue olahraga terbaik dengan mudah</p>
+      <a href="#venues"
+         class="inline-block px-8 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg shadow-md transition">
+        BOOKING SEKARANG!
+      </a>
     </div>
+    {% if user.is_authenticated %}
+  <div class="absolute top-5 right-5 z-50">
+    <form action="{% url 'authenticate:logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit"
+              class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md transition">
+        Logout
+      </button>
+    </form>
+  </div>
+  {% endif %}
+  </section>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <div class="container">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" id="search" class="form-control" placeholder="Cari venue...">
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="category">
-                        <option value="">Semua Kategori</option>
-                        {% for key, value in categories.items %}
-                            <option value="{{ key }}">{{ value }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" class="form-control" placeholder="Min Price" id="min_price">
-                </div>
-                <div class="col-md-2">
-                    <input type="number" class="form-control" placeholder="Max Price" id="max_price">
-                </div>
-                <div class="col-md-1">
-                    <button class="btn btn-light w-100" onclick="filterVenues()">Filter</button>
-                </div>
-            </div>
+  
+
+  <!-- Filter Section -->
+  <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
+    <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-slate-200 px-5 py-6">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+        <input type="text" id="search" class="form-control border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400"
+               placeholder="Cari venue...">
+
+        <select id="category" class="form-select border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400">
+          <option value="">Semua Kategori</option>
+          {% for key, value in categories.items %}
+            <option value="{{ key }}">{{ value }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Min Price" id="min_price">
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Max Price" id="max_price">
+
+        <button onclick="filterVenues()"
+                class="bg-rose-600 text-white rounded-md font-semibold shadow hover:bg-rose-700 transition">
+          Filter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Venues Section -->
+  <div class="max-w-7xl mx-auto px-6 pb-20" id="venues">
+    {% if venues %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="venues-container">
+        {% for venue in venues %}
+          {% include 'card_product.html' %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 px-10 py-14 text-center shadow-md">
+        <div class="w-28 h-28 mx-auto mb-6">
+          <img src="{% static 'images/placeholder.png' %}" alt="No Venues" class="w-full h-full object-contain opacity-70">
         </div>
-    </div>
+        <h3 class="text-2xl font-bold text-slate-800 mb-3">Belum ada venue yang terdaftar</h3>
+        <p class="text-slate-600 mb-8">Silakan coba lagi nanti</p>
+      </div>
+    {% endif %}
+  </div>
 
-    <!-- Venues Section -->
-    <div class="container py-5" id="venues">
-        {% if venues %}
-            <div class="row g-4" id="venues-container">
-                {% for venue in venues %}
-                <div class="col-md-4">
-                    <div class="venue-card card">
-                        <img src="{{ venue.thumbnail.url|default:'/static/default-venue.jpg' }}" 
-                             class="card-img-top" 
-                             alt="{{ venue.name }}">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">{{ venue.name }}</h5>
-                            <div class="mb-3">
-                                <span class="badge bg-primary">{{ venue.get_category_display }}</span>
-                                <span class="badge bg-secondary">Rp {{ venue.price|floatformat:0 }}</span>
-                            </div>
-                            <p class="card-text mb-2">⭐ {{ venue.rating }}/5.0</p>
-                            <p class="card-text small mb-3">📍 {{ venue.address }}</p>
-                            <button class="btn btn-primary w-100" 
-                                    onclick="bookVenue('{{ venue.id }}')"
-                                    {% if not venue.is_available %}disabled{% endif %}>
-                                {% if venue.is_available %}Book Now{% else %}Not Available{% endif %}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-center py-5">
-                <img src="/static/placeholder.png" alt="No Venues" class="mb-4" style="max-width: 200px; opacity: 0.5;">
-                <h3 class="text-muted">Belum ada venue yang terdaftar</h3>
-                <p class="text-muted">Silakan coba lagi nanti</p>
-            </div>
-        {% endif %}
-    </div>
+  <!-- Toast Notifications -->
+  <div id="toast" class="fixed top-6 right-6 hidden z-50">
+    <div id="toast-inner" class="bg-white border border-slate-200 shadow-lg rounded-xl px-5 py-4 text-slate-800 font-semibold"></div>
+  </div>
+</div>
 
-    <!-- Alert Messages -->
-    <div class="alert alert-success" id="success-alert" role="alert"></div>
-    <div class="alert alert-danger" id="error-alert" role="alert"></div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script>
-        function filterVenues() {
-            const params = new URLSearchParams();
-            
-            const search = $('#search').val();
-            const category = $('#category').val();
-            const minPrice = $('#min_price').val();
-            const maxPrice = $('#max_price').val();
-            
-            if (search) params.append('q', search);
-            if (category) params.append('category', category);
-            if (minPrice) params.append('min_price', minPrice);
-            if (maxPrice) params.append('max_price', maxPrice);
-            
-            $.ajax({
-                url: '?' + params.toString(),
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
-                success: function(data) {
-                    updateVenues(data.venues);
-                }
-            });
-        }
+<script>
+// ===============================
+// Filtering & Rendering
+// ===============================
+function filterVenues() {
+  const params = new URLSearchParams();
 
-        function updateVenues(venues) {
-            const container = $('#venues-container');
-            container.empty();
-            
-            venues.forEach(venue => {
-                container.append(`
-                    <div class="col-md-4">
-                        <div class="venue-card card">
-                            <img src="${venue.thumbnail || '/static/default-venue.jpg'}" 
-                                 class="card-img-top" 
-                                 alt="${venue.name}">
-                            <div class="card-body">
-                                <h5 class="card-title fw-bold">${venue.name}</h5>
-                                <div class="mb-3">
-                                    <span class="badge bg-primary">${venue.category}</span>
-                                    <span class="badge bg-secondary">Rp ${venue.price}</span>
-                                </div>
-                                <p class="card-text mb-2">⭐ ${venue.rating}/5.0</p>
-                                <p class="card-text small mb-3">📍 ${venue.address}</p>
-                                <button class="btn btn-primary w-100" 
-                                        onclick="bookVenue('${venue.id}')"
-                                        ${!venue.is_available ? 'disabled' : ''}>
-                                    ${venue.is_available ? 'Book Now' : 'Not Available'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `);
-            });
-        }
+  const search = $('#search').val();
+  const category = $('#category').val();
+  const minPrice = $('#min_price').val();
+  const maxPrice = $('#max_price').val();
 
-        function bookVenue(venueId) {
-            $.ajax({
-                url: `/venue/book-venue/${venueId}/`,
-                method: 'POST',
-                success: function(response) {
-                    showAlert('success', 'Booking successful!');
-                    setTimeout(() => location.reload(), 1500);
-                },
-                error: function(xhr) {
-                    showAlert('error', xhr.responseJSON?.message || 'Booking failed');
-                }
-            });
-        }
+  if (search) params.append('q', search);
+  if (category) params.append('category', category);
+  if (minPrice) params.append('min_price', minPrice);
+  if (maxPrice) params.append('max_price', maxPrice);
 
-        function showAlert(type, message) {
-            const alert = type === 'success' ? $('#success-alert') : $('#error-alert');
-            alert.text(message).fadeIn();
-            setTimeout(() => alert.fadeOut(), 3000);
-        }
-    </script>
-</body>
-</html>
+  $.ajax({
+    url: '?' + params.toString(),
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(data) {
+      updateVenues(data.venues);
+    },
+    error: function() {
+      showToast("Error", "Gagal memuat data venue.", "error");
+    }
+  });
+}
+
+function updateVenues(venues) {
+  const container = $('#venues-container');
+  container.empty();
+
+  if (!venues.length) {
+    container.append(`
+      <div class="col-span-full text-center text-slate-500 py-10">
+        <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
+        <p>Tidak ada venue yang sesuai.</p>
+      </div>
+    `);
+    return;
+  }
+
+  venues.forEach(venue => {
+    container.append(`
+      <div class="relative bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
+        <img src="${venue.thumbnail || '/static/default-venue.jpg'}"
+             class="w-full h-56 object-cover" alt="${venue.name}">
+        <div class="p-5">
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${venue.category}</span>
+            <span class="text-rose-600 font-semibold">Rp ${venue.price}</span>
+          </div>
+          <p class="text-sm text-slate-600 mb-1">⭐ ${venue.rating}/5.0</p>
+          <p class="text-sm text-slate-600 mb-4">📍 ${venue.address}</p>
+          <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition"
+                  onclick="bookVenue('${venue.id}')"
+                  ${!venue.is_available ? 'disabled class="bg-gray-300 text-gray-500 cursor-not-allowed"' : ''}>
+            ${venue.is_available ? 'Book Now' : 'Not Available'}
+          </button>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function bookVenue(venueId) {
+  $.ajax({
+    url: `/venue/book-venue/${venueId}/`,
+    method: 'POST',
+    success: function() {
+      showToast("Success", "Booking berhasil!", "success");
+      setTimeout(() => location.reload(), 1200);
+    },
+    error: function(xhr) {
+      showToast("Error", xhr.responseJSON?.message || "Booking gagal.", "error");
+    }
+  });
+}
+
+// ===============================
+// Toast Function
+// ===============================
+function showToast(title, message, type) {
+  const toast = $('#toast');
+  const inner = $('#toast-inner');
+
+  const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
+              : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+              : "bg-yellow-100 text-yellow-800 border-yellow-300";
+
+  inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+  inner.html(`<strong>${title}</strong><br>${message}`);
+  toast.fadeIn();
+
+  setTimeout(() => toast.fadeOut(), 3000);
+}
+
+// ===============================
+// Login AJAX Example
+// ===============================
+async function loginUser(event) {
+  event.preventDefault();
+
+  const formData = new FormData(event.target);
+
+  try {
+    const response = await fetch("{% url 'authenticate:login' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": "{{ csrf_token }}" },
+      body: formData
+    });
+
+    if (response.ok) {
+      showToast("Success", "Login berhasil!", "success");
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      const data = await response.json();
+      showToast("Error", data.message || "Login gagal.", "error");
+    }
+  } catch {
+    showToast("Error", "Terjadi kesalahan saat login.", "error");
+  }
+}
+</script>
+
+{% endblock content %}

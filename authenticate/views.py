@@ -9,6 +9,11 @@ from django.contrib.auth.models import User
 import datetime
 from django.views.decorators.csrf import csrf_exempt
 
+
+# ==============================================================
+# REGISTER
+# ==============================================================
+
 @csrf_exempt
 def register(request):
     """Handle user registration"""
@@ -28,7 +33,7 @@ def register(request):
                 user = User.objects.create_user(username=username, password=password)
                 user.save()
                 messages.success(request, 'Account created successfully! Please login.')
-
+                
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         "status": True,
@@ -51,6 +56,10 @@ def register(request):
     context = {'form': form}
     return render(request, 'authenticate/register.html', context)
 
+
+# ==============================================================
+# LOGIN
+# ==============================================================
 
 @csrf_exempt
 def login_user(request):
@@ -80,8 +89,7 @@ def login_user(request):
             # ✅ Redirect ke halaman utama match_up setelah login sukses
             response = HttpResponseRedirect(reverse("match_up:show_matches"))
             response.set_cookie('last_login', str(datetime.datetime.now()))
-
-            # Kalau login via AJAX
+            
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     "status": True,
@@ -101,14 +109,17 @@ def login_user(request):
     return render(request, 'authenticate/login.html')
 
 
+# ==============================================================
+# LOGOUT
+# ==============================================================
+
 @csrf_exempt
 def logout_user(request):
     """Handle user logout"""
     logout(request)
-    response = HttpResponseRedirect(reverse('venue:home_section'))
+    response = HttpResponseRedirect(reverse('venue:landing_page'))
     response.delete_cookie('last_login')
     
-    # Handle AJAX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
             "status": True,
@@ -116,7 +127,11 @@ def logout_user(request):
         })
     return response
 
-# API endpoints for authentication
+
+# ==============================================================
+# USER DATA (API)
+# ==============================================================
+
 @csrf_exempt
 def get_user_data(request):
     """Return current user data"""
