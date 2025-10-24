@@ -1,15 +1,17 @@
 {% extends 'base.html' %}
 {% load static %}
 
+<html>
 {% block meta %}
 <title>VenYuk! - Sewa Lapangan & Temukan Komunitas Olahraga</title>
 {% endblock meta %}
 
 {% block content %}
 {% include 'navbar.html' %}
+{% include 'modal.html' %}
 
 <!-- Hero Section -->
-<section class="relative h-[90vh] overflow-hidden">
+<section class="relative min-h-[80vh] md:h-[90vh] flex items-center overflow-hidden">
   <!-- Background image -->
   <div class="absolute inset-0 bg-cover bg-center" 
        style="background-image: url('{% static "images/landing_banner.png" %}');">
@@ -18,11 +20,11 @@
   <!-- Red overlay with gradient for readability -->
   <div class="absolute inset-0 bg-gradient-to-r from-[#1D1616]/90 via-[#8E1616]/80 to-[#D84040]/50"></div>
 
-  <!-- Content Grid -->
-  <div class="relative z-10 h-full grid grid-cols-1 md:grid-cols-5 items-center px-8 md:px-16">
-    
-    <!-- Text Section (3/5 width) -->
-    <div class="md:col-span-3 text-left text-[#EEEEEE] space-y-6">
+  <!-- Content Container -->
+  <div class="relative z-10 w-full grid grid-cols-1 md:grid-cols-5 items-center gap-8 px-6 md:px-16 py-12">
+
+    <!-- Text Section -->
+    <div class="md:col-span-3 text-left text-[#EEEEEE] space-y-6 order-2 md:order-1">
       <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]">
         Selamat Datang di 
         <span class="text-[#D84040]">VenYuk!</span>
@@ -36,11 +38,11 @@
       </a>
     </div>
 
-    <!-- Image Section (2/5 width) -->
-    <div class="hidden md:flex justify-center items-end md:col-span-2 relative z-20">
-    <img src="{% static 'images/ronaldo.png' %}" 
-        alt="Cristiano Ronaldo"
-        class="object-contain h-[85%] drop-shadow-2xl transition-transform duration-500 hover:scale-105" />
+    <!-- Image Section -->
+    <div class="flex justify-center items-end md:col-span-2 order-1 md:order-2">
+      <img src="{% static 'images/ronaldo.png' %}" 
+           alt="Cristiano Ronaldo"
+           class="object-contain max-h-[300px] md:max-h-[500px] drop-shadow-2xl transition-transform duration-500 hover:scale-105" />
     </div>
   </div>
 </section>
@@ -63,7 +65,7 @@
 
     <!-- Images -->
     <div class="grid grid-cols-2 gap-4">
-      <img src="{% static 'images/placeholder.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
+      <img src="{% static 'images/ronaldo.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 2" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 3" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 4" class="rounded-xl shadow-md hover:scale-105 transition">
@@ -89,4 +91,5 @@
     </div>
   </div>
 </section>
+</html>
 {% endblock content %}
