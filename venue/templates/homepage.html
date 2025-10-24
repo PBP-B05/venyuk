@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>VenYuk! - Find Your Perfect Venue</title>
+{% endblock meta %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
+  <!-- Hero Section -->
+  <section class="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white"
+          style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static 'images/banner_homepage.jpg' %});">
+    <div class="px-6">
+      <h1 class="text-5xl sm:text-6xl font-extrabold mb-4 tracking-tight">BOOKING VENUE di VenYuk!</h1>
+      <p class="text-lg sm:text-xl text-slate-200 mb-6">Temukan dan booking venue olahraga terbaik dengan mudah</p>
+      <a href="#venues"
+         class="inline-block px-8 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg shadow-md transition">
+        BOOKING SEKARANG!
+      </a>
+    </div>
+    {% if user.is_authenticated %}
+  <div class="absolute top-5 right-5 z-50">
+    <form action="{% url 'authenticate:logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit"
+              class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md transition">
+        Logout
+      </button>
+    </form>
+  </div>
+  {% endif %}
+  </section>
+
+  
+
+  <!-- Filter Section -->
+  <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
+    <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-slate-200 px-5 py-6">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+        <input type="text" id="search" class="form-control border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400"
+               placeholder="Cari venue...">
+
+        <select id="category" class="form-select border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400">
+          <option value="">Semua Kategori</option>
+          {% for key, value in categories.items %}
+            <option value="{{ key }}">{{ value }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Min Price" id="min_price">
+        <input type="number" class="form-control border border-slate-300 rounded-md px-3 py-2" placeholder="Max Price" id="max_price">
+
+        <button onclick="filterVenues()"
+                class="bg-rose-600 text-white rounded-md font-semibold shadow hover:bg-rose-700 transition">
+          Filter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Venues Section -->
+  <div class="max-w-7xl mx-auto px-6 pb-20" id="venues">
+    {% if venues %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="venues-container">
+        {% for venue in venues %}
+          {% include 'card_product.html' %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 px-10 py-14 text-center shadow-md">
+        <div class="w-28 h-28 mx-auto mb-6">
+          <img src="{% static 'images/placeholder.png' %}" alt="No Venues" class="w-full h-full object-contain opacity-70">
+        </div>
+        <h3 class="text-2xl font-bold text-slate-800 mb-3">Belum ada venue yang terdaftar</h3>
+        <p class="text-slate-600 mb-8">Silakan coba lagi nanti</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast" class="fixed top-6 right-6 hidden z-50">
+    <div id="toast-inner" class="bg-white border border-slate-200 shadow-lg rounded-xl px-5 py-4 text-slate-800 font-semibold"></div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+// ===============================
+// Filtering & Rendering
+// ===============================
+function filterVenues() {
+  const params = new URLSearchParams();
+
+  const search = $('#search').val();
+  const category = $('#category').val();
+  const minPrice = $('#min_price').val();
+  const maxPrice = $('#max_price').val();
+
+  if (search) params.append('q', search);
+  if (category) params.append('category', category);
+  if (minPrice) params.append('min_price', minPrice);
+  if (maxPrice) params.append('max_price', maxPrice);
+
+  $.ajax({
+    url: '?' + params.toString(),
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(data) {
+      updateVenues(data.venues);
+    },
+    error: function() {
+      showToast("Error", "Gagal memuat data venue.", "error");
+    }
+  });
+}
+
+function updateVenues(venues) {
+  const container = $('#venues-container');
+  container.empty();
+
+  if (!venues.length) {
+    container.append(`
+      <div class="col-span-full text-center text-slate-500 py-10">
+        <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
+        <p>Tidak ada venue yang sesuai.</p>
+      </div>
+    `);
+    return;
+  }
+
+  venues.forEach(venue => {
+    container.append(`
+      <div class="relative bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
+        <img src="${venue.thumbnail || '/static/default-venue.jpg'}"
+             class="w-full h-56 object-cover" alt="${venue.name}">
+        <div class="p-5">
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${venue.category}</span>
+            <span class="text-rose-600 font-semibold">Rp ${venue.price}</span>
+          </div>
+          <p class="text-sm text-slate-600 mb-1">⭐ ${venue.rating}/5.0</p>
+          <p class="text-sm text-slate-600 mb-4">📍 ${venue.address}</p>
+          <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition"
+                  onclick="bookVenue('${venue.id}')"
+                  ${!venue.is_available ? 'disabled class="bg-gray-300 text-gray-500 cursor-not-allowed"' : ''}>
+            ${venue.is_available ? 'Book Now' : 'Not Available'}
+          </button>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function bookVenue(venueId) {
+  $.ajax({
+    url: `/venue/book-venue/${venueId}/`,
+    method: 'POST',
+    success: function() {
+      showToast("Success", "Booking berhasil!", "success");
+      setTimeout(() => location.reload(), 1200);
+    },
+    error: function(xhr) {
+      showToast("Error", xhr.responseJSON?.message || "Booking gagal.", "error");
+    }
+  });
+}
+
+// ===============================
+// Toast Function
+// ===============================
+function showToast(title, message, type) {
+  const toast = $('#toast');
+  const inner = $('#toast-inner');
+
+  const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
+              : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+              : "bg-yellow-100 text-yellow-800 border-yellow-300";
+
+  inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+  inner.html(`<strong>${title}</strong><br>${message}`);
+  toast.fadeIn();
+
+  setTimeout(() => toast.fadeOut(), 3000);
+}
+
+// ===============================
+// Login AJAX Example
+// ===============================
+async function loginUser(event) {
+  event.preventDefault();
+
+  const formData = new FormData(event.target);
+
+  try {
+    const response = await fetch("{% url 'authenticate:login' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": "{{ csrf_token }}" },
+      body: formData
+    });
+
+    if (response.ok) {
+      showToast("Success", "Login berhasil!", "success");
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      const data = await response.json();
+      showToast("Error", data.message || "Login gagal.", "error");
+    }
+  } catch {
+    showToast("Error", "Terjadi kesalahan saat login.", "error");
+  }
+}
+</script>
+
+{% endblock content %}
