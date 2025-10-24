@@ -1,5 +1,5 @@
 {% load static %}
-
+{% include 'modal.html' %}
 <nav class="navbar">
     <a href="/" class="logo">
         <img src="{% static 'images/logo_venyuk.png' %}" alt="Logo Venyuk">
@@ -30,8 +30,10 @@
             </div>
         </div>
     {% else %}
-    <!-- Login Button -->
-        <a href="{% url 'authenticate:login' %}" class="btn-masuk">MASUK</a>
+    <button onclick="openLoginModal()"
+        class="bg-[#D84040] text-white font-semibold px-4 py-2 rounded-md hover:bg-[#8E1616] transition-all duration-300 shadow-md">
+        Masuk
+    </button>
     {% endif %}
 
     <div class="hamburger">
