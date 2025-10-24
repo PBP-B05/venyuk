@@ -9,7 +9,6 @@
 {% include 'navbar.html' %}
 
 <div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
-
   <!-- Hero Section -->
   <section class="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white"
           style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static 'images/banner_homepage.jpg' %});">
@@ -21,7 +20,20 @@
         BOOKING SEKARANG!
       </a>
     </div>
+    {% if user.is_authenticated %}
+  <div class="absolute top-5 right-5 z-50">
+    <form action="{% url 'authenticate:logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit"
+              class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md transition">
+        Logout
+      </button>
+    </form>
+  </div>
+  {% endif %}
   </section>
+
+  
 
   <!-- Filter Section -->
   <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
