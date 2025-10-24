@@ -19,6 +19,7 @@ from django.db.models import F
 
 
 # Create your views here.
+@csrf_exempt
 def show_main(request):
     products = Product.objects.all()
     
@@ -35,11 +36,13 @@ def show_main(request):
     
     return render(request, 'main.html', context)
 
+@csrf_exempt
 def show_xml(request):
      product_list = Product.objects.all()
      xml_data = serializers.serialize("xml", product_list)
      return HttpResponse(xml_data, content_type="application/xml")
 
+@csrf_exempt
 def show_xml_by_id(request, id):
    try:
        product_item = Product.objects.filter(pk=id)
@@ -48,6 +51,7 @@ def show_xml_by_id(request, id):
    except Product.DoesNotExist:
        return HttpResponse(status=404)
 
+@csrf_exempt
 def show_json(request):
     Product_list = Product.objects.all()
     data = [
@@ -68,6 +72,7 @@ def show_json(request):
 
     return JsonResponse(data, safe=False)
 
+@csrf_exempt
 def show_json_by_id(request, id):
     try:
         product = Product.objects.select_related('user').get(pk=id)
@@ -86,7 +91,9 @@ def show_json_by_id(request, id):
         return JsonResponse(data)
     except product.DoesNotExist:
         return JsonResponse({'detail': 'Not found'}, status=404)
-    
+
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def create_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -97,7 +104,7 @@ def create_product(request):
         form = ProductForm()
     return render(request, 'create_product.html', {'form': form})
 
-
+@csrf_exempt
 def show_product(request, id):
     product = get_object_or_404(Product, pk=id)
 
@@ -106,6 +113,8 @@ def show_product(request, id):
     }
     return render(request, "product_detail.html", context)
 
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def edit_product(request, id):
     product = get_object_or_404(Product, pk=id)
     form = ProductForm(request.POST or None, instance=product)
@@ -124,6 +133,8 @@ def delete_product(request, id):
     product.delete()
     return HttpResponseRedirect(reverse('ven_shop:show_main'))
 
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def checkout_product(request, id):
     product = get_object_or_404(Product, pk=id)
 
@@ -145,11 +156,15 @@ def checkout_product(request, id):
     context = {'product': product}
     return render(request, 'checkout.html', context)
 
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def purchase_success(request, id):
     product = get_object_or_404(Product, pk=id)
     context = {'product': product}
     return render(request, 'success.html', context)
 
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def rating(request, id):
     if request.method == 'POST':
         product = get_object_or_404(Product, pk=id)
