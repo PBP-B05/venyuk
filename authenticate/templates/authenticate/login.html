@@ -104,8 +104,10 @@
                         csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
                     },
                     success: function(response) {
-                        $("#success-alert").text("Login successful! Redirecting...").show();
-                        window.location.href = "{% url 'venue:home_section' %}";
+                        $("#success-alert").text(response.message || "Login successful! Redirecting...").show();
+                        setTimeout(() => {
+                            window.location.href = response.redirect_url;
+                        }, 800);
                     },
                     error: function(xhr) {
                         $("#error-alert").text(xhr.responseJSON?.message || "Login failed. Please try again.").show();
