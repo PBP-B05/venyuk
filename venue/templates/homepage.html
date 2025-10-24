@@ -22,8 +22,6 @@
     </div>
   </section>
 
-  
-
   <!-- Filter Section -->
   <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
     <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-slate-200 px-5 py-6">
@@ -54,7 +52,46 @@
     {% if venues %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="venues-container">
         {% for venue in venues %}
-          {% include 'card_product.html' %}
+          <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
+            <!-- Gambar Venue -->
+            {% if venue.thumbnail %}
+                <img src="{{ venue.thumbnail.url }}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
+            {% else %}
+                <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
+            {% endif %}
+
+            <div class="p-5">
+                <!-- Tag -->
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700 mb-2 inline-block">
+                    {{ venue.get_category_display }}
+                </span>
+
+                <!-- Nama Venue -->
+                <h3 class="text-lg font-semibold text-slate-900 mb-1">{{ venue.name }}</h3>
+
+                <!-- Rating dan Alamat -->
+                <div class="flex items-center text-slate-600 mb-2">
+                    <span class="text-yellow-500 me-1">★</span>
+                    <span class="font-semibold text-dark me-2">{{ venue.rating|floatformat:1 }}</span>
+                    {% if venue.address %}
+                        <span class="text-slate-500 text-sm">• {{ venue.address|truncatewords:3 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Harga -->
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-rose-600 font-semibold">Rp {{ venue.price|floatformat:0 }}</span>
+                    <span class="text-sm text-slate-500">/ jam</span>
+                </div>
+
+                <!-- Tombol Booking -->
+                <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition book-venue-btn"
+                        onclick="bookVenue('{{ venue.id }}', {{ venue.price }})"
+                        {% if not venue.is_available %}disabled style="background-color: #d1d5db; color: #6b7280; cursor: not-allowed;"{% endif %}>
+                    {% if venue.is_available %}Book Now{% else %}Not Available{% endif %}
+                </button>
+            </div>
+          </div>
         {% endfor %}
       </div>
     {% else %}
@@ -67,140 +104,306 @@
       </div>
     {% endif %}
   </div>
+</div>
 
-  <!-- Toast Notifications -->
-  <div id="toast" class="fixed top-6 right-6 hidden z-50">
-    <div id="toast-inner" class="bg-white border border-slate-200 shadow-lg rounded-xl px-5 py-4 text-slate-800 font-semibold"></div>
-  </div>
+<!-- Booking Modal -->
+<div id="bookingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeBookingModal()"></div>
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative z-10">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-800">Booking Venue</h3>
+            <button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-600 text-xl p-1">
+                ✕
+            </button>
+        </div>
+        
+        <form id="bookingForm">
+            <input type="hidden" id="bookingVenueId">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Tanggal Booking</label>
+                    <input type="date" id="bookingDate" 
+                           class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400"
+                           required>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Waktu Mulai</label>
+                        <select id="startTime" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400" required>
+                            <option value="">Pilih Jam</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Waktu Selesai</label>
+                        <select id="endTime" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400" required>
+                            <option value="">Pilih Jam</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="priceSummary" class="bg-slate-50 rounded-lg p-4 hidden">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">Durasi:</span>
+                        <span id="duration" class="font-semibold text-slate-800">0 jam</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm text-slate-600">Total Harga:</span>
+                        <span id="estimatedPrice" class="font-semibold text-rose-600 text-lg">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeBookingModal()" 
+                        class="flex-1 py-2 px-4 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition">
+                    Batal
+                </button>
+                <button type="submit" id="submitBookingBtn"
+                        class="flex-1 py-2 px-4 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition font-semibold">
+                    Booking Sekarang
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
+    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
-// ===============================
-// Filtering & Rendering
-// ===============================
-function filterVenues() {
-  const params = new URLSearchParams();
+let currentVenuePrice = 0;
+let currentVenueId = '';
 
-  const search = $('#search').val();
-  const category = $('#category').val();
-  const minPrice = $('#min_price').val();
-  const maxPrice = $('#max_price').val();
-
-  if (search) params.append('q', search);
-  if (category) params.append('category', category);
-  if (minPrice) params.append('min_price', minPrice);
-  if (maxPrice) params.append('max_price', maxPrice);
-
-  $.ajax({
-    url: '?' + params.toString(),
-    headers: {'X-Requested-With': 'XMLHttpRequest'},
-    success: function(data) {
-      updateVenues(data.venues);
-    },
-    error: function() {
-      showToast("Error", "Gagal memuat data venue.", "error");
+// Function untuk generate jam options
+function generateTimeOptions() {
+    const startSelect = $('#startTime');
+    const endSelect = $('#endTime');
+    
+    // Clear existing options except the first one
+    startSelect.find('option:not(:first)').remove();
+    endSelect.find('option:not(:first)').remove();
+    
+    // Generate hours 00-23
+    for (let i = 0; i <= 23; i++) {
+        const hour = i.toString().padStart(2, '0');
+        const timeValue = `${hour}:00`;
+        const timeDisplay = `${hour}:00`;
+        
+        startSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
+        endSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
     }
-  });
+}
+
+// Optimized Modal Functions
+function openBookingModal(venueId, venuePrice) {
+    currentVenuePrice = venuePrice;
+    currentVenueId = venueId;
+    $('#bookingVenueId').val(venueId);
+    
+    // Reset form
+    $('#bookingForm')[0].reset();
+    $('#priceSummary').hide();
+    $('#submitBookingBtn').prop('disabled', false).text('Booking Sekarang');
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    $('#bookingDate').attr('min', today);
+    $('#bookingDate').val(today);
+    
+    // Show modal dengan backdrop blur
+    $('#bookingModal').show();
+    document.body.style.overflow = 'hidden';
+}
+
+function closeBookingModal() {
+    $('#bookingModal').hide();
+    document.body.style.overflow = '';
+    currentVenuePrice = 0;
+    currentVenueId = '';
+}
+
+function calculateBookingPrice() {
+    const startTime = $('#startTime').val();
+    const endTime = $('#endTime').val();
+    
+    if (startTime && endTime) {
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        let durationHours = endHour - startHour;
+        
+        if (durationHours > 0) {
+            const totalPrice = currentVenuePrice * durationHours;
+            $('#duration').text(durationHours + ' jam');
+            $('#estimatedPrice').text('Rp ' + totalPrice.toLocaleString('id-ID'));
+            $('#priceSummary').show();
+            $('#submitBookingBtn').prop('disabled', false);
+        } else {
+            $('#priceSummary').hide();
+            $('#submitBookingBtn').prop('disabled', true);
+        }
+    } else {
+        $('#priceSummary').hide();
+        $('#submitBookingBtn').prop('disabled', true);
+    }
+}
+
+// Global Functions
+function bookVenue(venueId, venuePrice) {
+    openBookingModal(venueId, venuePrice);
+}
+
+function filterVenues() {
+    const params = new URLSearchParams();
+    const search = $('#search').val();
+    const category = $('#category').val();
+    const minPrice = $('#min_price').val();
+    const maxPrice = $('#max_price').val();
+
+    if (search) params.append('q', search);
+    if (category) params.append('category', category);
+    if (minPrice) params.append('min_price', minPrice);
+    if (maxPrice) params.append('max_price', maxPrice);
+
+    $.ajax({
+        url: '?' + params.toString(),
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        success: function(data) {
+            updateVenues(data.venues);
+        },
+        error: function() {
+            showToast("Error", "Gagal memuat data venue.", "error");
+        }
+    });
 }
 
 function updateVenues(venues) {
-  const container = $('#venues-container');
-  container.empty();
+    const container = $('#venues-container');
+    container.empty();
 
-  if (!venues.length) {
-    container.append(`
-      <div class="col-span-full text-center text-slate-500 py-10">
-        <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
-        <p>Tidak ada venue yang sesuai.</p>
-      </div>
-    `);
-    return;
-  }
-
-  venues.forEach(venue => {
-    container.append(`
-      <div class="relative bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
-        <img src="${venue.thumbnail || '/static/default-venue.jpg'}"
-             class="w-full h-56 object-cover" alt="${venue.name}">
-        <div class="p-5">
-          <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
-          <div class="flex items-center justify-between mb-2">
-            <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${venue.category}</span>
-            <span class="text-rose-600 font-semibold">Rp ${venue.price}</span>
-          </div>
-          <p class="text-sm text-slate-600 mb-1">⭐ ${venue.rating}/5.0</p>
-          <p class="text-sm text-slate-600 mb-4">📍 ${venue.address}</p>
-          <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition"
-                  onclick="bookVenue('${venue.id}')"
-                  ${!venue.is_available ? 'disabled class="bg-gray-300 text-gray-500 cursor-not-allowed"' : ''}>
-            ${venue.is_available ? 'Book Now' : 'Not Available'}
-          </button>
-        </div>
-      </div>
-    `);
-  });
-}
-
-function bookVenue(venueId) {
-  $.ajax({
-    url: `/venue/book-venue/${venueId}/`,
-    method: 'POST',
-    success: function() {
-      showToast("Success", "Booking berhasil!", "success");
-      setTimeout(() => location.reload(), 1200);
-    },
-    error: function(xhr) {
-      showToast("Error", xhr.responseJSON?.message || "Booking gagal.", "error");
+    if (!venues.length) {
+        container.append(`
+            <div class="col-span-full text-center text-slate-500 py-10">
+                <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
+                <p>Tidak ada venue yang sesuai.</p>
+            </div>
+        `);
+        return;
     }
-  });
-}
 
-// ===============================
-// Toast Function
-// ===============================
-function showToast(title, message, type) {
-  const toast = $('#toast');
-  const inner = $('#toast-inner');
+    venues.forEach(venue => {
+        const isAvailable = venue.is_available;
+        const buttonClass = isAvailable 
+            ? 'bg-rose-600 hover:bg-rose-700 text-white' 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed';
+        const buttonText = isAvailable ? 'Book Now' : 'Not Available';
+        const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price})` : '';
 
-  const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
-              : type === "error" ? "bg-red-100 text-red-800 border-red-300"
-              : "bg-yellow-100 text-yellow-800 border-yellow-300";
-
-  inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
-  inner.html(`<strong>${title}</strong><br>${message}`);
-  toast.fadeIn();
-
-  setTimeout(() => toast.fadeOut(), 3000);
-}
-
-// ===============================
-// Login AJAX Example
-// ===============================
-async function loginUser(event) {
-  event.preventDefault();
-
-  const formData = new FormData(event.target);
-
-  try {
-    const response = await fetch("{% url 'authenticate:login' %}", {
-      method: "POST",
-      headers: { "X-CSRFToken": "{{ csrf_token }}" },
-      body: formData
+        container.append(`
+            <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
+                <img src="${venue.thumbnail || '{% static 'images/placeholder.png' %}'}"
+                     class="w-full h-56 object-cover" alt="${venue.name}" loading="lazy">
+                <div class="p-5">
+                    <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700 mb-2 inline-block">
+                        ${venue.category}
+                    </span>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
+                    <div class="flex items-center text-slate-600 mb-2">
+                        <span class="text-yellow-500 me-1">★</span>
+                        <span class="font-semibold me-2">${venue.rating}</span>
+                        <span class="text-slate-500 text-sm">• ${venue.address ? venue.address.substring(0, 30) + '...' : ''}</span>
+                    </div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-rose-600 font-semibold">Rp ${venue.price.toLocaleString('id-ID')}</span>
+                        <span class="text-sm text-slate-500">/ jam</span>
+                    </div>
+                    <button class="w-full ${buttonClass} py-2 rounded-md font-semibold transition"
+                            onclick="${onClick}">
+                        ${buttonText}
+                    </button>
+                </div>
+            </div>
+        `);
     });
-
-    if (response.ok) {
-      showToast("Success", "Login berhasil!", "success");
-      setTimeout(() => window.location.reload(), 1200);
-    } else {
-      const data = await response.json();
-      showToast("Error", data.message || "Login gagal.", "error");
-    }
-  } catch {
-    showToast("Error", "Terjadi kesalahan saat login.", "error");
-  }
 }
+
+function showToast(title, message, type) {
+    const toast = $('#toast');
+    const inner = $('#toast-inner');
+
+    const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
+                : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+                : "bg-yellow-100 text-yellow-800 border-yellow-300";
+
+    inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+    inner.html(`<strong>${title}</strong><br>${message}`);
+    toast.show();
+
+    setTimeout(() => toast.hide(), 3000);
+}
+
+// Event Handlers - Optimized
+$(document).ready(function() {
+    // Generate time options saat page load
+    generateTimeOptions();
+    
+    // Booking modal events
+    $('#startTime, #endTime').on('change', calculateBookingPrice);
+    
+    $('#bookingForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const venueId = $('#bookingVenueId').val();
+        const bookingDate = $('#bookingDate').val();
+        const startTime = $('#startTime').val();
+        const endTime = $('#endTime').val();
+        
+        if (!bookingDate || !startTime || !endTime) {
+            showToast("Error", "Harap isi semua field", "error");
+            return;
+        }
+        
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        if (endHour <= startHour) {
+            showToast("Error", "Waktu selesai harus setelah waktu mulai", "error");
+            return;
+        }
+        
+        // Disable button selama proses
+        $('#submitBookingBtn').prop('disabled', true).text('Memproses...');
+        
+        $.ajax({
+            url: `/venue/book/${venueId}/`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                booking_date: bookingDate,
+                start_time: startTime,
+                end_time: endTime
+            }),
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                showToast("Success", response.message, "success");
+                closeBookingModal();
+                setTimeout(() => location.reload(), 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || "Booking gagal";
+                showToast("Error", errorMessage, "error");
+                $('#submitBookingBtn').prop('disabled', false).text('Booking Sekarang');
+            }
+        });
+    });
+});
 </script>
 
 {% endblock content %}
