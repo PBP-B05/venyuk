@@ -6,7 +6,7 @@
     </a>
 
     <ul class="nav-links">
-        <li><a href="#venue">Venue</a></li>
+        <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
         <li><a href="#promo">Promo</a></li>
         <li><a href="#ven-shop">Ven-Shop</a></li>
         <li><a href="#main-bareng">Main Bareng</a></li>
@@ -14,7 +14,7 @@
         <li><a href="#blog">Blog</a></li>
     </ul>
 
-    <a href="#masuk" class="btn-masuk">MASUK</a>
+    <a href="{% url 'authenticate:register' %}" class="btn-masuk">MASUK</a>
 
     <div class="hamburger">
         <span></span>
@@ -42,8 +42,13 @@
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        position: relative;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
     }
+
 
     .logo {
         display: flex;
