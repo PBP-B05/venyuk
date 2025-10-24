@@ -1,50 +1,74 @@
-<article class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden max-w-sm">
-    <div class="aspect-[16/9] relative overflow-hidden">
-        {% if match.venue.thumbnail %}
+<article class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col md:flex-row max-w-3xl w-full">
+    <!-- Bagian kiri: gambar -->
+    <div class="md:w-1/2 w-full relative overflow-hidden">
+        {% if match.venue and match.venue.thumbnail %}
             <img src="{{ match.venue.thumbnail.url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
         {% else %}
-            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+            <div class="w-full h-full bg-gray-200 flex items-center justify-center min-h-[200px] md:min-h-[250px]">
                 <span class="text-gray-400">No Image</span>
             </div>
         {% endif %}
 
         <div class="absolute top-3 left-3">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-600 text-white">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-600 text-white shadow-sm">
                 ⭐ {{ match.get_difficulty_level_display }}
             </span>
         </div>
     </div>
 
-    <div class="p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider">{{ match.venue.get_category_display }}</p>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2 truncate">
-            {{ match.venue.name }}
-        </h3>
+    <!-- Bagian kanan: deskripsi -->
+    <div class="flex-1 p-5 flex flex-col justify-between">
+        <div>
+            {% if match.venue %}
+                <p class="text-xs text-gray-500 uppercase tracking-wider">{{ match.venue.get_category_display }}</p>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                    {{ match.venue.name }}
+                </h3>
+            {% else %}
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Match Tanpa Venue</h3>
+            {% endif %}
 
-        <hr class="my-3 border-gray-100">
-
-        <div class="space-y-2 text-sm text-gray-600">
-            <div class="flex items-center">
-                <span class="w-5 text-center mr-2">👤</span>
-                <span>Dibuat oleh: <strong>{{ match.creator.username }}</strong></span>
-            </div>
-            <div class="flex items-center">
-                <span class="w-5 text-center mr-2">📅</span>
-                <span>{{ match.start_time|date:"l, j F Y" }}</span>
-            </div>
-            <div class="flex items-center">
-                <span class="w-5 text-center mr-2">🕒</span>
-                <span>{{ match.start_time|time:"H:i" }} - {{ match.end_time|time:"H:i" }}</span>
+            <div class="space-y-2 text-sm text-gray-600">
+                <div class="flex items-center">
+                    <span class="w-5 text-center mr-2">👤</span>
+                    <span>Dibuat oleh: <strong>{{ match.creator.username|default:"Anon" }}</strong></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-5 text-center mr-2">📅</span>
+                    <span>{{ match.start_time|date:"l, j F Y" }}</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-5 text-center mr-2">🕒</span>
+                    <span>{{ match.start_time|time:"H:i" }} - {{ match.end_time|time:"H:i" }}</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-        <span class="text-base font-bold text-gray-800">
-            Slot {{ match.slot_terisi }}/{{ match.slot_total }}
-        </span>
-        <a href="{% url 'matchup:show_match_detail' match.id %}" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
-            Details
-        </a>
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100 mt-4">
+            <span class="text-base font-bold text-gray-800">
+                Slot {{ match.slot_terisi }}/{{ match.slot_total }}
+            </span>
+            
+            <div class="flex items-center gap-2">
+                <a href="{% url 'match_up:show_match_detail' match.id %}"
+                   class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
+                    Details
+                </a>
+
+                {% if user == match.creator %}
+                    {% comment %} <a href="{% url 'match_up:edit_match' match.id %}"
+                       class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
+                        Edit
+                    </a> {% endcomment %}
+                    {% comment %} <form action="{% url 'match_up:delete_match' match.id %}" method="POST" class="inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
+                            Delete
+                        </button>
+                    </form> {% endcomment %}
+                {% endif %}
+            </div>
+        </div>
     </div>
 </article>

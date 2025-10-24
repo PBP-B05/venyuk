@@ -1,0 +1,189 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detail Match</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- ✅ Notifikasi Pesan (Django messages) -->
+    {% if messages %}
+    <div class="max-w-4xl mx-auto mt-4">
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-lg shadow-md transition-all duration-500
+            {% if message.tags == 'success' %}
+                bg-green-100 text-green-800 border border-green-300
+            {% elif message.tags == 'error' %}
+                bg-red-100 text-red-800 border border-red-300
+            {% elif message.tags == 'warning' %}
+                bg-yellow-100 text-yellow-800 border border-yellow-300
+            {% else %}
+                bg-blue-100 text-blue-800 border border-blue-300
+            {% endif %}
+        " id="message-box">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        // Auto-hide message setelah 3 detik
+        setTimeout(() => {
+            const msg = document.getElementById('message-box');
+            if (msg) msg.style.display = 'none';
+        }, 3000);
+    </script>
+    {% endif %}
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- Thumbnail -->
+        <div class="relative w-full h-64 rounded-lg overflow-hidden shadow-md mb-6">
+            {% if match.thumbnail %}
+                <img src="{{ match.thumbnail.url }}" alt="Match Thumbnail" class="w-full h-full object-cover">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xl">
+                    No Image Available
+                </div>
+            {% endif %}
+            <div class="absolute top-3 left-3 bg-blue-600 text-white text-xs font-medium rounded-md px-2 py-0.5">
+                ⭐ {{ match.get_difficulty_level_display }}
+            </div>
+        </div>
+
+        <!-- Venue Detail -->
+        <section class="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
+            <h2 class="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">🏟 Venue Detail</h2>
+
+            <h3 class="text-lg font-bold text-gray-900 mb-2">
+                {% if match.venue %}
+                    {{ match.venue.name }}
+                {% else %}
+                    Nama Venue Tidak Tersedia
+                {% endif %}
+            </h3>
+
+            <p class="text-gray-600 uppercase tracking-wide mb-3">
+                {% if match.venue %}
+                    {{ match.venue.get_category_display }}
+                {% endif %}
+            </p>
+
+            {% if match.venue %}
+                <p class="mb-1">📍 <strong>Alamat:</strong> {{ match.venue.address }}</p>
+                <p class="mb-1">⭐ <strong>Rating:</strong> {{ match.venue.rating }}/5</p>
+                <p class="mb-1">💰 <strong>Harga:</strong> Rp {{ match.venue.price }}</p>
+                <p class="mb-1">📌 <strong>Status:</strong> 
+                    {% if match.venue.is_available %}
+                        <span class="text-green-600 font-semibold">Tersedia</span>
+                    {% else %}
+                        <span class="text-red-600 font-semibold">Tidak tersedia</span>
+                    {% endif %}
+                </p>
+            {% endif %}
+        </section>
+
+        <!-- Match Detail -->
+        <section class="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
+            <h2 class="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">⚽ Match Detail</h2>
+
+            <p class="mb-2">👤 <strong>Pembuat Match:</strong> {{ match.creator.username }}</p>
+            <p class="mb-2">🎟️ <strong>Slot:</strong> {{ match.slot_terisi }} / {{ match.slot_total }}</p>
+            <p class="mb-2">⏰ <strong>Waktu:</strong> {{ match.start_time|time:"H:i" }} - {{ match.end_time|time:"H:i" }}</p>
+            <p class="mb-2">🎯 <strong>Level Kesulitan:</strong> {{ match.get_difficulty_level_display }}</p>
+            <p class="mb-2">📝 <strong>Deskripsi:</strong> {{ match.description|default:"Deskripsi belum tersedia." }}</p>
+
+            <!-- Peserta Terdaftar -->
+            <div class="mt-6 border-t border-gray-300 pt-4">
+                <h3 class="text-lg font-semibold mb-2">👥 Peserta Terdaftar</h3>
+                {% if participants %}
+                    <ul class="list-disc list-inside space-y-1 text-gray-700">
+                        {% for participant in participants %}
+                            <li>
+                                <span class="font-semibold">{{ participant.full_name }}</span>
+                                {% if is_my_match %}
+                                    <span class="text-gray-500"> - {{ participant.phone }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-gray-500 italic">Belum ada peserta yang terdaftar.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Jika BUKAN creator, tampilkan form Join Match -->
+        {% if not is_my_match %}
+        <section class="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">🎉 Join Match</h2>
+
+            {% if error_message %}
+                <div class="bg-red-100 text-red-700 px-4 py-2 rounded-md mb-4">
+                    {{ error_message }}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'match_up:join_match' match.id %}">
+                {% csrf_token %}
+
+                <!-- Input Nama Lengkap -->
+                <div class="mb-4">
+                    <label for="full_name" class="block text-gray-700 font-medium mb-2">Nama Lengkap</label>
+                    <input
+                        type="text"
+                        id="full_name"
+                        name="full_name"
+                        placeholder="Masukkan nama lengkap kamu"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        required
+                    >
+                </div>
+
+                <!-- Input No. Telepon -->
+                <div class="mb-6">
+                    <label for="phone" class="block text-gray-700 font-medium mb-2">No. Telepon</label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="Contoh: 081234567890"
+                        pattern="[0-9]{10,15}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        required
+                    >
+                </div>
+
+                <!-- Tombol Join -->
+                <button
+                    type="submit"
+                    class="w-full bg-red-500 text-white font-semibold py-3 rounded-md hover:bg-red-600 transition"
+                >
+                    Match Up!
+                </button>
+            </form>
+        </section>
+
+        {% else %}
+        <!-- Jika CREATOR: tampilkan tombol Edit & Delete -->
+        <section class="flex gap-4">
+            <a href="{% url 'match_up:edit_match' match.id %}" class="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md text-center font-semibold">
+                Edit
+            </a>
+
+            <form action="{% url 'match_up:delete_match' match.id %}" method="POST" onsubmit="return confirm('Yakin ingin menghapus match ini?');" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md font-semibold">
+                    Delete
+                </button>
+            </form>
+        </section>
+        {% endif %}
+
+    </div>
+
+</body>
+</html>

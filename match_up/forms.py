@@ -1,7 +1,14 @@
 from django import forms
+from venue.models import Venue
 from .models import Match
 
 class MatchForm(forms.ModelForm):
+    
+    venue = forms.ModelChoiceField(
+        queryset=Venue.objects.filter(is_available=True), 
+        empty_label="Pilih venue"
+    )
+    
     class Meta:
         model = Match
         
