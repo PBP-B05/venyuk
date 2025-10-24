@@ -34,6 +34,14 @@ class Challenge(models.Model):
         CLOSED = "closed", "Closed"
         COMPLETED = "completed", "Completed"
 
+    # >>> Tambahan: kategori matchup
+    class MatchCategory(models.TextChoices):
+        RO16          = "RO16", "RO16"
+        CUP_FINAL     = "Cup Final", "Cup Final"
+        LEAGUE        = "League", "League"
+        QUARTER_FINAL = "Quarter Final", "Quarter Final"
+        SEMI_FINAL    = "Semi Final", "Semi Final"
+
     title = models.CharField(max_length=160)
     sport = models.CharField(max_length=20, choices=SportChoices.choices)
     host = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="hosted_challenges")
@@ -43,6 +51,14 @@ class Challenge(models.Model):
     cost_per_person = models.PositiveIntegerField(null=True, blank=True)  # rupiah/orang
     banner_url = models.URLField(blank=True)
     description = models.TextField(blank=True)
+
+    # >>> field baru
+    match_category = models.CharField(
+        max_length=20,
+        choices=MatchCategory.choices,
+        default=MatchCategory.LEAGUE,
+        verbose_name="Kategori Matchup",
+    )
 
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -55,4 +71,3 @@ class Challenge(models.Model):
 
     def get_absolute_url(self):
         return reverse("versus:detail", args=[self.pk])
-

@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 
 from .models import Challenge, SportChoices, Community
 
+
 def _dt_formats():
     return [
         "%Y-%m-%d %H:%M",
@@ -45,6 +46,14 @@ class ChallengeCreateForm(forms.Form):
     sport = forms.ChoiceField(
         choices=SportChoices.choices,
         label="Olahraga",
+    )
+
+    # >>> Kategori Matchup (baru)
+    match_category = forms.ChoiceField(
+        label="Kategori Matchup",
+        choices=Challenge.MatchCategory.choices,
+        initial=Challenge.MatchCategory.LEAGUE,
+        widget=forms.Select(attrs={"class": "form-select"})
     )
 
     start_at = forms.DateTimeField(
@@ -99,6 +108,7 @@ class ChallengeCreateForm(forms.Form):
             host=self.community,
             start_at=data["start_at"],
             cost_per_person=data.get("cost_per_person") or 0,
+            match_category=data["match_category"],      # <<< simpan kategori matchup
         )
         # venue opsional — hanya jika field tersedia (app venues terinstal)
         if "venue" in self.fields:
@@ -113,7 +123,7 @@ class ChallengeCreateForm(forms.Form):
 class QuickChallengeForm(forms.Form):
     """
     Form ringkas untuk membuat Challenge tanpa venue,
-    sekarang menerima pilihan olahraga.
+    sekarang menerima pilihan olahraga & kategori matchup.
     Wajib diberi argumen `community` saat init.
     """
     sport = forms.ChoiceField(
@@ -121,6 +131,14 @@ class QuickChallengeForm(forms.Form):
         choices=SportChoices.choices,
         initial=SportChoices.SEPAK_BOLA,
     )
+
+    # >>> Kategori Matchup (baru)
+    match_category = forms.ChoiceField(
+        label="Kategori Matchup",
+        choices=Challenge.MatchCategory.choices,
+        initial=Challenge.MatchCategory.LEAGUE,
+    )
+
     start_at = forms.DateTimeField(
         label="Waktu mulai",
         input_formats=_dt_formats(),
@@ -139,6 +157,7 @@ class QuickChallengeForm(forms.Form):
         super().__init__(*args, **kwargs)
         # Styling helper (opsional, agar rapi di template)
         self.fields["sport"].widget.attrs.update({"class": "w-full rounded-lg border border-gray-300 px-3 py-2"})
+        self.fields["match_category"].widget.attrs.update({"class": "w-full rounded-lg border border-gray-300 px-3 py-2"})
         self.fields["start_at"].widget = forms.DateTimeInput(
             attrs={"type": "datetime-local", "class": "w-full rounded-lg border border-gray-300 px-3 py-2"},
             format="%Y-%m-%dT%H:%M",
@@ -155,16 +174,18 @@ class QuickChallengeForm(forms.Form):
         data = self.cleaned_data
         ch = Challenge(
             title="Matchup",
-            sport=data["sport"],                # <-- ambil dari pilihan user
+            sport=data["sport"],
             host=self.community,
             start_at=data["start_at"],
             cost_per_person=data.get("cost_per_person") or 0,
+            match_category=data["match_category"],      # <<< simpan kategori matchup
         )
         ch.full_clean()
         if commit:
             ch.save()
         return ch
-    
+
+
 def join_challenge(request, pk: int):
     """
     Join VERSUS: set status -> closed.

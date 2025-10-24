@@ -1,4 +1,3 @@
-{# templates/versus/create.html #}
 {% extends "base.html" %}
 {% load static %}
 
@@ -12,10 +11,21 @@
 <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
   <div class="bg-white rounded-2xl shadow p-6">
     <h1 class="text-2xl font-semibold mb-1">Buat Matchup</h1>
-    <p class="text-gray-500 mb-6">Pilih olahraga, masukkan waktu & harga per orang.</p>
+    <p class="text-gray-500 mb-6">Isi detail matchup kamu di bawah ini.</p>
 
     <form method="post" class="space-y-5">
       {% csrf_token %}
+
+      {# Jika form punya field 'title', tampilkan #}
+      {% if form.title %}
+      <div>
+        <label class="block text-sm font-medium mb-1">Judul</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.title.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <div>
         <label class="block text-sm font-medium mb-1">Olahraga</label>
@@ -24,6 +34,17 @@
           <p class="text-rose-600 text-sm mt-1">{{ form.sport.errors.0 }}</p>
         {% endif %}
       </div>
+
+      {# Kategori Matchup baru #}
+      {% if form.match_category %}
+      <div>
+        <label class="block text-sm font-medium mb-1">Kategori Matchup</label>
+        {{ form.match_category }}
+        {% if form.match_category.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.match_category.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <div>
         <label class="block text-sm font-medium mb-1">Waktu mulai</label>
@@ -41,6 +62,17 @@
         {% endif %}
       </div>
 
+      {# Jika form punya venue (app venues terinstal) #}
+      {% if form.venue %}
+      <div>
+        <label class="block text-sm font-medium mb-1">Venue</label>
+        {{ form.venue }}
+        {% if form.venue.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.venue.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
       <div class="flex items-center gap-3">
         <a href="{% url 'versus:list' %}" class="px-4 py-2 rounded-lg bg-gray-100">Batal</a>
         <button class="px-5 py-2 rounded-full bg-rose-500 text-white">Buat Matchup</button>
@@ -49,4 +81,5 @@
   </div>
 </div>
 {% endblock %}
+
 
