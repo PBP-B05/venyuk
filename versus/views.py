@@ -6,6 +6,9 @@ from .models import Challenge, SportChoices, Community
 from .forms import QuickChallengeForm
 from django.contrib.auth import get_user_model
 
+def index(request):
+    return render(request, "versus/list.html")
+
 def list_challenges(request):
     sport = (request.GET.get("sport") or "").strip()
     qs = Challenge.objects.filter(status=Challenge.Status.OPEN)
@@ -73,4 +76,27 @@ def _get_public_community():
         },
     )
     return comm
+
+# project_root/versus/views.py
+from django.shortcuts import render
+
+def index(request):
+    # pakai template di ROOT: templates/versus/list.html
+    return render(request, "versus/list.html")
+
+def create(request):
+    if request.method == "POST":
+        form = VersusForm(request.POST, request.FILES)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            # pastikan status default "Open" agar lolos filter list
+            if not getattr(obj, "status", None):
+                obj.status = "Open"
+            obj.save()
+            return redirect("versus:detail", obj.id)
+    else:
+        form = VersusForm()
+    return render(request, "versus/create.html", {"form": form})
+
+
 

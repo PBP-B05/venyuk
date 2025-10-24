@@ -13,5 +13,6 @@ urlpatterns = [
     path("create/", views.create_challenge, name="create"),
     path("<int:pk>/", views.challenge_detail, name="detail"),
     path("<int:pk>/join/", views.join_challenge, name="join"),
+    path("", views.index, name="index"),
     
 ]
