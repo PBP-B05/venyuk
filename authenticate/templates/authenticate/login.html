@@ -62,10 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("password").value;
 
     try {
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
       const response = await fetch("{% url 'authenticate:login' %}", {
         method: "POST",
         headers: {
-          "X-CSRFToken": "{{ csrf_token }}",
+          "X-CSRFToken": csrftoken,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
