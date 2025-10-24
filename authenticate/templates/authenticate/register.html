@@ -74,15 +74,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
       const response = await fetch("{% url 'authenticate:register' %}", {
-        
         method: "POST",
         headers: {
-          "X-CSRFToken": csrftoken,
+          "X-CSRFToken": "{{ csrf_token }}",
           "Content-Type": "application/x-www-form-urlencoded",
         },
-
         body: new URLSearchParams({
           username: username,
           password1: password1,
