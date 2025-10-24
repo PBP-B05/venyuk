@@ -1,5 +1,6 @@
 <article class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col md:flex-row max-w-3xl w-full">
-    <!-- Bagian kiri: gambar -->
+    
+    <!-- gambar -->
     <div class="md:w-1/2 w-full relative overflow-hidden">
         {% if match.venue and match.venue.thumbnail %}
             <img src="{{ match.venue.thumbnail.url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
@@ -16,7 +17,7 @@
         </div>
     </div>
 
-    <!-- Bagian kanan: deskripsi -->
+    <!-- deskripsi -->
     <div class="flex-1 p-5 flex flex-col justify-between">
         <div>
             {% if match.venue %}
@@ -54,20 +55,6 @@
                    class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
                     Details
                 </a>
-
-                {% if user == match.creator %}
-                    {% comment %} <a href="{% url 'match_up:edit_match' match.id %}"
-                       class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors no-underline">
-                        Edit
-                    </a> {% endcomment %}
-                    {% comment %} <form action="{% url 'match_up:delete_match' match.id %}" method="POST" class="inline">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
-                            Delete
-                        </button>
-                    </form> {% endcomment %}
-                {% endif %}
             </div>
         </div>
     </div>

@@ -1,99 +1,91 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Match Up</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* ... (Style Anda yang sudah ada tetap sama) ... */
-        /* Hilangkan scrollbar */
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Efek fokus tengah */
-        .match-card {
-            transition: transform 0.3s, opacity 0.3s;
-            transform: scale(0.9);
-            opacity: 0.8;
-        }
-        .match-card.active {
-            transform: scale(1.5);
-            opacity: 1;
-            z-index: 10;
-        }
+{% block content %}
 
-        .tab {
-            cursor: pointer;
-            padding-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 1.125rem;
-            color: #6b7280;
-            border-bottom: 3px solid transparent;
-            transition: color 0.3s, border-color 0.3s;
-        }
-        .tab.active {
-            color: #111827;
-            border-color: #ef4444;
-        }
+<style>
+    /* Hilangkan scrollbar */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Tombol panah */
-        .arrow-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(255,255,255,0.8);
-            border-radius: 9999px;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            z-index: 20; /* Pastikan tombol di atas background */
-        }
-        .arrow-btn:hover {
-            background-color: rgba(255,255,255,1);
-        }
-        .arrow-btn svg {
-            width: 22px;
-            height: 22px;
-            color: #ef4444;
-        }
+    /* Efek fokus tengah */
+    .match-card {
+        transition: transform 0.3s, opacity 0.3s;
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+    .match-card.active {
+        transform: scale(1.5);
+        opacity: 1;
+        z-index: 10;
+    }
 
-        /* --- STYLE BARU UNTUK TRANSISI BACKGROUND --- */
-        .bg-transition-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            /* Transisi mulus untuk opacity */
-            transition: opacity 0.8s ease-in-out;
-            z-index: 1; /* Di belakang konten scroller */
-        }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800">
+    .tab {
+        cursor: pointer;
+        padding-bottom: 0.5rem;
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: #6b7280;
+        border-bottom: 3px solid transparent;
+        transition: color 0.3s, border-color 0.3s;
+    }
+    .tab.active {
+        color: #111827;
+        border-color: #ef4444;
+    }
 
-    <!-- Wrapper untuk Scroller dan Background Dinamis -->
-    <div id="scroller-wrapper" class="w-full py-4 shadow-sm relative overflow-hidden">
+    /* Tombol panah */
+    .arrow-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: rgba(255,255,255,0.8);
+        border-radius: 9999px;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        z-index: 20; /* Pastikan tombol di atas background */
+    }
+    .arrow-btn:hover {
+        background-color: rgba(255,255,255,1);
+    }
+    .arrow-btn svg {
+        width: 22px;
+        height: 22px;
+        color: #ef4444;
+    }
 
-        <!-- 1. Lapisan Background Dinamis -->
-        <!-- Default (Siang) akan memiliki opacity 1 -->
+    /* --- STYLE BARU UNTUK TRANSISI BACKGROUND --- */
+    .bg-transition-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        /* Transisi mulus untuk opacity */
+        transition: opacity 0.8s ease-in-out;
+        z-index: 1; /* Di belakang konten scroller */
+    }
+</style>
+
+<div class="bg-gray-50 text-gray-800 pt-20">
+
+    {% include "navbar.html" %}
+
+    <div id="scroller-wrapper" class="w-full py-4 shadow-sm relative overflow-hidden h-[60vh] pt-10">
+
         <div id="bg-siang" class="bg-transition-layer" style="background-image: url('{% static 'images/siang.jpg' %}'); opacity: 1;"></div>
         <div id="bg-sore" class="bg-transition-layer" style="background-image: url('{% static 'images/sore.jpg' %}'); opacity: 0;"></div>
         <div id="bg-malam" class="bg-transition-layer" style="background-image: url('{% static 'images/malam.jpg' %}'); opacity: 0;"></div>
 
-        <!-- 2. Konten Scroller (Tombol & Kartu) -->
-        <!-- Diberi z-index agar selalu di atas lapisan background -->
         <div class="relative z-10">
-            <!-- Tombol Panah -->
             <button id="prevBtn" class="arrow-btn left-5 hidden">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -105,13 +97,8 @@
                 </svg>
             </button>
 
-            <!-- Scrollable Container -->
-            <div id="scrollContainer" class="flex overflow-x-auto overflow-y-hidden space-x-4 scrollbar-hide snap-x snap-mandatory px-[calc(50vw-200px)]">
+            <div id="scrollContainer" class="flex overflow-x-auto overflow-y-hidden space-x-4 scrollbar-hide snap-x snap-mandatory px-[calc(50vw-200px)] h-full items-center">
                 {% for match in matches %}
-                <!-- 
-                    PERUBAHAN PENTING: 
-                    Menambahkan data-start-time dengan HANYA jam (format 24-jam) 
-                -->
                 <div class="match-card snap-center flex-none w-[400px] h-[270px] bg-transparent rounded-2xl flex flex-col items-center justify-center transition duration-300"
                      data-start-time="{{ match.start_time|date:'H' }}">
                     
@@ -142,7 +129,6 @@
 
     <div class="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
 
-        <!-- Sidebar Filter (Form diberi ID) -->
         <aside class="w-full lg:w-1/4 bg-white p-6 rounded-lg shadow-md min-h-screen lg:sticky lg:top-8">
             <h2 class="text-xl font-bold mb-6 text-gray-700">Filter</h2>
 
@@ -202,7 +188,6 @@
 
         </aside>
 
-        <!-- Main Content -->
         <main class="w-full lg:w-3/4">
 
             <div class="flex justify-between items-center mb-6">
@@ -230,12 +215,10 @@
 
             <hr class="mb-6 border-gray-200" />
 
-            <!-- All Match Content (Sekarang menggunakan include) -->
             <div id="allMatchContent" class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {% include 'all_matches_partial.html' with matches=matches %}
             </div>
 
-            <!-- My Match Content (Sekarang menggunakan include) -->
             <div id="myMatchContent" class="hidden grid grid-cols-1 md:grid-cols-2 gap-8">
                 {% include 'my_matches_partial.html' with user_matches=user_matches %}
             </div>
@@ -243,38 +226,40 @@
         </main>
     </div>
 
-    <script>
+</div>
+
+<script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Tab switch logic (Tetap sama) ---
         const allBtn = document.getElementById('allMatchBtn');
         const myBtn = document.getElementById('myMatchBtn');
         const allContent = document.getElementById('allMatchContent');
         const myContent = document.getElementById('myMatchContent');
 
-        allBtn.addEventListener('click', () => {
-            allBtn.classList.add('active');
-            myBtn.classList.remove('active');
-            allContent.classList.remove('hidden');
-            allContent.style.opacity = '1'; // Pastikan terlihat
-            myContent.classList.add('hidden');
-        });
+        if (allBtn) {
+            allBtn.addEventListener('click', () => {
+                allBtn.classList.add('active');
+                myBtn.classList.remove('active');
+                allContent.classList.remove('hidden');
+                allContent.style.opacity = '1';
+                myContent.classList.add('hidden');
+            });
+        }
 
-        myBtn.addEventListener('click', () => {
-            myBtn.classList.add('active');
-            allBtn.classList.remove('active');
-            myContent.classList.remove('hidden');
-            myContent.style.opacity = '1'; // Pastikan terlihat
-            allContent.classList.add('hidden');
-        });
+        if (myBtn) {
+            myBtn.addEventListener('click', () => {
+                myBtn.classList.add('active');
+                allBtn.classList.remove('active');
+                myContent.classList.remove('hidden');
+                myContent.style.opacity = '1';
+                allContent.classList.add('hidden');
+            });
+        }
 
-        // --- LOGIKA BARU UNTUK BACKGROUND DINAMIS ---
-        let currentBgState = null; // Lacak status background saat ini
+        let currentBgState = null;
         const bgSiang = document.getElementById('bg-siang');
         const bgSore = document.getElementById('bg-sore');
         const bgMalam = document.getElementById('bg-malam');
-        // --- AKHIR LOGIKA BARU ---
 
-        // --- Efek auto fokus tengah + panah (Logika Scroller) ---
         function initScroller() {
             const cards = document.querySelectorAll('.match-card');
             const scrollContainer = document.getElementById('scrollContainer');
@@ -299,70 +284,62 @@
                     
                     if (distance < 180 && !activeCardFound) {
                         card.classList.add('active');
-                        activeCardFound = true; // Hanya satu kartu yang aktif
+                        activeCardFound = true;
 
-                        // --- LOGIKA BARU: GANTI BACKGROUND ---
                         const hour = parseInt(card.dataset.startTime, 10);
-                        let newState = 'siang'; // Default (06:00 - 14:59)
+                        let newState = 'siang';
 
-                        if (hour >= 15 && hour < 19) { // Sore (15:00 - 18:59)
+                        if (hour >= 15 && hour < 19) { 
                             newState = 'sore';
-                        } else if (hour >= 19 || hour < 6) { // Malam (19:00 - 05:59)
-                            newState = 'malam';
+                        } else if (hour >= 19 || hour < 6) {
+                            newState = 'malam'; 
                         }
-                        
-                        // Hanya ubah DOM jika status BARU berbeda
+
                         if (newState !== currentBgState) {
                             currentBgState = newState;
-                            
-                            // Set opacity berdasarkan status baru
+  
                             if (bgSiang) bgSiang.style.opacity = (newState === 'siang') ? '1' : '0';
                             if (bgSore) bgSore.style.opacity = (newState === 'sore') ? '1' : '0';
                             if (bgMalam) bgMalam.style.opacity = (newState === 'malam') ? '1' : '0';
                         }
-                        // --- AKHIR LOGIKA BARU ---
-
                     } else {
                         card.classList.remove('active');
                     }
                 });
 
-                // Tampilkan/sembunyikan tombol panah
                 prevBtn.classList.toggle('hidden', scrollContainer.scrollLeft <= 0);
                 nextBtn.classList.toggle('hidden', scrollContainer.scrollLeft + scrollContainer.offsetWidth >= scrollContainer.scrollWidth - 1);
             };
 
             scrollContainer.addEventListener('scroll', updateActiveCard);
-            updateActiveCard(); // Jalankan sekali saat memuat untuk set background awal
+            updateActiveCard(); 
 
-            // Tombol panah kiri-kanan
             nextBtn.addEventListener('click', () => {
                 if (cards.length === 0) return;
-                const cardWidth = cards[0].offsetWidth + 16; // 16px dari space-x-4
+                const cardWidth = cards[0].offsetWidth + 16; 
                 scrollContainer.scrollBy({ left: cardWidth, behavior: 'smooth' });
             });
 
             prevBtn.addEventListener('click', () => {
                 if (cards.length === 0) return;
-                const cardWidth = cards[0].offsetWidth + 16; // 16px dari space-x-4
+                const cardWidth = cards[0].offsetWidth + 16;
                 scrollContainer.scrollBy({ left: -cardWidth, behavior: 'smooth' });
             });
         }
         
-        initScroller(); // Jalankan scroller saat halaman dimuat
+        initScroller();
 
-        // --- LOGIKA AJAX FILTER (Tidak Berubah) ---
         const filterForm = document.getElementById('filter-form');
         const submitBtn = document.getElementById('filter-submit-btn');
 
         if (filterForm) {
             filterForm.addEventListener('submit', (event) => {
-                event.preventDefault(); // Hentikan submit form standar
+                event.preventDefault();
 
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Mencari...';
-                allContent.style.opacity = '0.5';
-                myContent.style.opacity = '0.5';
+                if (allContent) allContent.style.opacity = '0.5';
+                if (myContent) myContent.style.opacity = '0.5';
                 
                 const formData = new FormData(filterForm);
                 const params = new URLSearchParams(formData);
@@ -377,39 +354,35 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Perbarui HANYA konten match list
-                    allContent.innerHTML = data.all_matches_html;
-                    myContent.innerHTML = data.my_matches_html;
 
-                    // Perbarui URL di browser bar tanpa reload
+                    if (allContent) allContent.innerHTML = data.all_matches_html;
+                    if (myContent) myContent.innerHTML = data.my_matches_html;
+
                     window.history.pushState({}, '', newUrl);
 
-                    // Kembalikan status tombol dan opacity
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Cari Match';
-                    allContent.style.opacity = '1';
-                    
-                    // Pastikan tab yang benar ditampilkan
-                    if (allBtn.classList.contains('active')) {
-                        myContent.style.opacity = '1'; // Set opacity agar tidak terpengaruh
-                        myContent.classList.add('hidden');
+                    if (allContent) allContent.style.opacity = '1';
+
+                    if (allBtn && allBtn.classList.contains('active')) {
+                        if (myContent) {
+                            myContent.style.opacity = '1';
+                            myContent.classList.add('hidden');
+                        }
                     } else {
-                        allContent.classList.add('hidden');
+                        if (allContent) allContent.classList.add('hidden');
                     }
                 })
                 .catch(error => {
                     console.error('Filter Error:', error);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Cari Match';
-                    allContent.style.opacity = '1';
-                    myContent.style.opacity = '1';
+                    if (allContent) allContent.style.opacity = '1';
+                    if (myContent) myContent.style.opacity = '1';
                 });
             });
         }
     });
-    </script>
+</script>
 
-</body>
-</html>
-
-
+{% endblock %}
