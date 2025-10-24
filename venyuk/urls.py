@@ -17,15 +17,19 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from django.contrib.auth.views import LoginView, LogoutView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
+    path('promo/', include('promo.urls')),
+    path('', include('venue.urls')),
+    path('authenticate/', include('authenticate.urls')),
     path("versus/", include("versus.urls")),
-    path("", RedirectView.as_view(pattern_name="versus:list", permanent=False)),
     path("accounts/", include("django.contrib.auth.urls")),
     path("accounts/login/", LoginView.as_view(template_name="registration/login.html"), name="login"),
     path("accounts/logout/", LogoutView.as_view(), name="logout"),
-]
-
+    
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
