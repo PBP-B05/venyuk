@@ -12,7 +12,6 @@ from .models import Venue
 
 def landing_page(request):
     """Public landing page before login"""
-    print("Authenticated:", request.user.is_authenticated)
     if request.user.is_authenticated:
         # Kalau user sudah login → langsung masuk ke homepage
         return redirect('venue:home_section')

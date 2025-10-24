@@ -63,7 +63,7 @@ def register(request):
 
 @csrf_exempt
 def login_user(request):
-    """Handle user login"""
+    """Handle user login via AJAX"""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -85,29 +85,24 @@ def login_user(request):
 
         if user is not None:
             login(request, user)
-
-            # ✅ Redirect ke halaman utama match_up setelah login sukses
-            response = HttpResponseRedirect(reverse("match_up:show_matches"))
+            response = JsonResponse({
+                "status": True,
+                "message": "Successfully logged in!",
+                "username": user.username
+            })
             response.set_cookie('last_login', str(datetime.datetime.now()))
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    "status": True,
-                    "message": "Successfully logged in!",
-                    "redirect_url": reverse("match_up:show_matches")
-                })
             return response
         else:
-            messages.error(request, 'Invalid username or password.')
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    "status": False,
-                    "message": "Invalid username or password."
-                }, status=401)
-            return render(request, 'authenticate/login.html')
+            return JsonResponse({
+                "status": False,
+                "message": "Invalid username or password."
+            }, status=401)
 
-    return render(request, 'authenticate/login.html')
-
+    # tidak render login.html lagi
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid request method."
+    }, status=400)
 
 # ==============================================================
 # LOGOUT
