@@ -1,11 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block meta %}
-
 <title>Sports Products</title>
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
 {% endblock meta %}
-{% block content %}
 
+{% block content %}
 <div class="bg-white min-h-screen">
   <!-- Hero Section -->
   <section class="relative bg-black text-white overflow-hidden">
@@ -17,7 +22,7 @@
             <span class="text-[#D84040]">Marathon</span>
           </h2>
           <p class="text-xl mb-8">Temukan sepatu, pakaian, aksesoris, dan suplemen terbaru.</p>
-          <a href="{% url 'ven_shop:show_main' %}" class="bg-[#D84040] text-white px-8 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors inline-block">
+          <a href="#products-section" class="bg-[#D84040] text-white px-8 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors inline-block">
             BELANJA SEKARANG
           </a>
         </div>
@@ -27,8 +32,8 @@
       </div>
     </div>
   </section>
-  <!-- Products Section with Sidebar Nempel Kiri -->
 
+  <!-- Products Section with Sidebar Nempel Kiri -->
   <div class="flex">
     <!-- Sidebar Fixed di Kiri -->
     <aside class="hidden lg:block w-64 flex-shrink-0 bg-gray-50">
@@ -36,6 +41,7 @@
         {% include 'sidebar.html' %}
       </div>
     </aside>
+
     <!-- Main Content -->
     <div class="flex-1 min-w-0">
       <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -56,7 +62,7 @@
         <!-- Products Grid -->
         <div class="products-container" id="products-container">
           {% if not Product_list %}
-            <div class="text-center py-12">
+            <div id="products-section" class="text-center py-12">
               <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
               </svg>
@@ -68,9 +74,8 @@
               {% endif %}
             </div>
           {% else %}
-
             <!-- Grid dengan 5 kolom per row -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div id="products-section" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {% for product in Product_list %}
                 {% include 'card_product.html' with product=product %}
               {% endfor %}
@@ -107,8 +112,24 @@
 </div>
 
 <script>
-  // Mobile sidebar toggle
   document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scroll untuk tombol "BELANJA SEKARANG"
+    const belanjaButton = document.querySelector('a[href="#products-section"]');
+    if (belanjaButton) {
+      belanjaButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetSection = document.getElementById('products-section');
+        if (targetSection) {
+          const offsetTop = targetSection.offsetTop - 80; // 80px offset untuk spacing
+          window.scrollTo({
+            top: offsetTop,
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
+
+    // Mobile sidebar toggle
     const toggleBtn = document.getElementById('mobileSidebarToggle');
     const overlay = document.getElementById('mobileSidebarOverlay');
     const closeBtn = document.getElementById('closeMobileSidebar');
@@ -133,6 +154,6 @@
       });
     }
   });
-  
 </script>
+
 {% endblock content %}
