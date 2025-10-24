@@ -1,22 +1,19 @@
 from django.urls import path
-from promo import views
+from . import views
 
+# Penting: set app_name agar URL namespacing berfungsi
 app_name = 'promo'
 
 urlpatterns = [
-    # CRUD Promo
-    path('', views.promo_list, name='list'),
-    path('create/', views.create_promo, name='create'),
-    path('<int:promo_id>/', views.promo_detail, name='detail'),
-    path('<int:promo_id>/update/', views.update_promo, name='update'),
-    path('<int:promo_id>/delete/', views.delete_promo, name='delete'),
+    # cth: /promo/
+    path('', views.PromoListView.as_view(), name='promo-list'),
     
-    # Apply Promo (untuk checkout)
-    path('apply/', views.apply_promo, name='apply'),
-    path('remove/', views.remove_promo, name='remove'),
-    path('validate/', views.validate_promo, name='validate'),
+    # cth: /promo/buat/
+    path('create/', views.PromoCreateView.as_view(), name='promo-create'),
     
-    # # Usage History
-    # path('<int:promo_id>/history/', views.promo_usage_history, name='usage_history'),
-    # path('my-usages/', views.my_promo_usages, name='my_usages'),
+    # cth: /promo/detail/5/ (pk = 5)
+    path('detail/<int:pk>/', views.PromoDetailView.as_view(), name='promo-detail'),
+    
+    # cth: /promo/edit/5/ (pk = 5)
+    path('edit/<int:pk>/', views.PromoUpdateView.as_view(), name='promo-update'),
 ]

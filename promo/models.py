@@ -1,207 +1,86 @@
-# promo/models.py
 from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-import random
-import string
-
-def generate_promo_code(category, discount_percentage, start_date):
-    """
-    Generate unique promo code with format: VENUE30-JAN25-A7B3
-    """
-    # Category prefix
-    category_prefix = category.upper()[:5]  # VENUE or SHOP
-    
-    # Discount
-    discount = f"{discount_percentage}"
-    
-    # Month-Year from start_date
-    month_year = start_date.strftime('%b%y').upper()  # JAN25
-    
-    # Random unique suffix (4 characters: letters + numbers)
-    unique_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-    
-    # Combine: VENUE30-JAN25-A7B3
-    code = f"{category_prefix}{discount}-{month_year}-{unique_suffix}"
-    
-    # Ensure uniqueness
-    while Promo.objects.filter(code=code).exists():
-        unique_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-        code = f"{category_prefix}{discount}-{month_year}-{unique_suffix}"
-    
-    return code
-
+import uuid # <-- 1. Tambahkan import ini
+# from django.contrib.auth.models import User # Import User jika Anda ingin melacak siapa yang membuat promo
 
 class Promo(models.Model):
+    """
+    Model untuk menyimpan data promo.
+    """
     CATEGORY_CHOICES = [
-        ('venue', 'Venue'),
         ('shop', 'Shop'),
+        ('venue', 'Venue'),
     ]
+
+    title = models.CharField(max_length=200, null=True, blank=True, help_text="Judul promo, cth: Promo Spesial Kemerdekaan")
+    thumbnail = models.ImageField(upload_to='promo_thumbnails/', help_text="Gambar thumbnail untuk promo")
+    description = models.TextField(help_text="Deskripsi lengkap promo")
+    amount_discount = models.PositiveSmallIntegerField(help_text="Besar diskon dalam persentase (cth: 20 untuk 20%)")
     
-    # Basic Info
-    title = models.CharField(max_length=200, verbose_name="Judul Promo")
+    # --- 2. Tambahkan field code di sini ---
     code = models.CharField(
         max_length=50, 
         unique=True, 
-        blank=True,  # Allow blank for new instances
-        verbose_name="Kode Promo"
+        blank=True, 
+        editable=False, 
+        help_text="Kode promo unik (dibuat otomatis)"
     )
-    thumbnail = models.ImageField(
-        upload_to='promos/',
-        verbose_name="Thumbnail"
-    )
-    category = models.CharField(
-        max_length=10, 
-        choices=CATEGORY_CHOICES, 
-        default='venue',
-        verbose_name="Kategori"
-    )
-    description = models.TextField(verbose_name="Deskripsi")
-    
-    # Discount
-    discount_percentage = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(100)],
-        verbose_name="Persentase Diskon (%)",
-        help_text="Masukkan angka 1-100"
-    )
-    
-    # Date Range
-    start_date = models.DateTimeField(verbose_name="Tanggal Mulai")
-    end_date = models.DateTimeField(verbose_name="Tanggal Berakhir")
-    
-    # Usage Limits
-    max_uses = models.IntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name="Maksimal Penggunaan",
-        help_text="Total penggunaan untuk semua user"
-    )
-    current_uses = models.IntegerField(
-        default=0,
-        verbose_name="Jumlah Terpakai",
-        help_text="Otomatis bertambah saat promo digunakan"
-    )
-    
-    # Status
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name="Aktif"
-    )
-    
-    # Timestamps
+    # ------------------------------------
+
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='venue')
+    max_uses = models.PositiveIntegerField(default=100, help_text="Berapa kali promo ini bisa digunakan")
+    start_date = models.DateField(default=timezone.now, help_text="Tanggal promo mulai aktif")
+    end_date = models.DateField(help_text="Tanggal promo berakhir")
+    is_active = models.BooleanField(default=True, help_text="Centang jika promo ini aktif dan bisa dilihat publik")
+
+    # Tambahan (Opsional, tapi bagus):
+    # author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True,
-        related_name='created_promos'
-    )
-    
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = "Promo"
-        verbose_name_plural = "Promos"
-    
+
     def __str__(self):
-        return f"{self.code} - {self.title}"
-    
+        return self.title
+
+    def is_promo_active(self):
+        """
+        Helper method untuk mengecek apakah promo sedang dalam masa berlaku.
+        """
+        now = timezone.now().date()
+        return self.is_active and self.start_date <= now <= self.end_date
+
+    # --- 3. Tambahkan dua method ini di akhir class ---
+
+    def _generate_unique_code(self):
+        """
+        Helper method internal untuk membuat kode unik.
+        Format: [CATEGORY][AMOUNT]-[RANDOM_6_CHAR]
+        Contoh: VENUE15-F3E9A1
+        """
+        # Loop untuk memastikan keunikan jika terjadi tabrakan (sangat jarang)
+        while True:
+            # Ambil basis dari kategori dan diskon
+            prefix = f"{self.category.upper()}{self.amount_discount}"
+            
+            # Tambahkan 6 karakter acak dari UUID
+            random_suffix = uuid.uuid4().hex[:6].upper()
+            
+            # Gabungkan
+            code = f"{prefix}-{random_suffix}"
+            
+            # Cek apakah kode ini sudah ada di database
+            if not Promo.objects.filter(code=code).exists():
+                # Jika belum ada, kembalikan kode baru ini
+                return code
+
     def save(self, *args, **kwargs):
-        # Auto-generate code jika belum ada
+        """
+        Override save method untuk membuat kode unik saat pertama kali disimpan.
+        """
+        # Kita hanya membuat kode jika field 'code' masih kosong
+        # Ini berarti kode hanya dibuat sekali saat promo dibuat
         if not self.code:
-            self.code = generate_promo_code(
-                self.category,
-                self.discount_percentage,
-                self.start_date
-            )
+            self.code = self._generate_unique_code()
+        
+        # Panggil save method asli dari parent class
         super().save(*args, **kwargs)
-    
-    @property
-    def remaining_uses(self):
-        """Sisa penggunaan promo"""
-        return self.max_uses - self.current_uses
-    
-    @property
-    def is_available(self):
-        """Check apakah promo masih bisa digunakan"""
-        now = timezone.now()
-        return (
-            self.is_active and
-            self.start_date <= now <= self.end_date and
-            self.current_uses < self.max_uses
-        )
-    
-    @property
-    def status_label(self):
-        """Label status promo"""
-        now = timezone.now()
-        if not self.is_active:
-            return "Non-Aktif"
-        elif now < self.start_date:
-            return "Belum Dimulai"
-        elif now > self.end_date:
-            return "Sudah Berakhir"
-        elif self.current_uses >= self.max_uses:
-            return "Kuota Habis"
-        else:
-            return "Aktif"
-    
-    def use_promo(self, user, order):
-        """
-        Method untuk menggunakan promo
-        Returns: (success: bool, message: str)
-        """
-        # Validasi
-        if not self.is_available:
-            return False, "Promo tidak tersedia"
-        
-        if self.current_uses >= self.max_uses:
-            return False, "Kuota promo sudah habis"
-        
-        # Increment usage
-        self.current_uses += 1
-        self.save()
-        
-        # Create usage record
-        PromoUsage.objects.create(
-            promo=self,
-            user=user,
-            order=order
-        )
-        
-        return True, "Promo berhasil digunakan"
 
-
-class PromoUsage(models.Model):
-    """Model untuk tracking penggunaan promo oleh user"""
-    promo = models.ForeignKey(
-        Promo, 
-        on_delete=models.CASCADE,
-        related_name='usages'
-    )
-    user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE,
-        related_name='promo_usages'
-    )
-    # order = models.ForeignKey(
-    #     'orders.Order',  # Sesuaikan dengan nama app order Anda
-    #     on_delete=models.CASCADE,
-    #     related_name='promo_usage',
-    #     null=True,
-    #     blank=True
-    # )
-    used_at = models.DateTimeField(auto_now_add=True)
-    discount_amount = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        help_text="Jumlah diskon yang didapat (dalam Rupiah)"
-    )
-    
-    class Meta:
-        ordering = ['-used_at']
-        verbose_name = "Penggunaan Promo"
-        verbose_name_plural = "Penggunaan Promo"
-    
-    def __str__(self):
-        return f"{self.promo.code} - {self.user.username} - {self.used_at.strftime('%d/%m/%Y')}"
