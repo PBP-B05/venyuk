@@ -89,7 +89,7 @@ def show_json_by_id(request, id):
             'brand' : product.brand
         }
         return JsonResponse(data)
-    except product.DoesNotExist:
+    except Product.DoesNotExist:
         return JsonResponse({'detail': 'Not found'}, status=404)
 
 @login_required(login_url='/authenticate/login/')
@@ -128,6 +128,8 @@ def edit_product(request, id):
 
     return render(request, "edit_product.html", context)
 
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
 def delete_product(request, id):
     product = get_object_or_404(Product, pk=id)
     product.delete()
@@ -168,26 +170,19 @@ def purchase_success(request, id):
 def rating(request, id):
     if request.method == 'POST':
         product = get_object_or_404(Product, pk=id)
-        
         try:
             rating_value = int(request.POST.get('rating'))
             if 1 <= rating_value <= 5:
-                product.refresh_from_db()
                 current_total_rating = product.rating * product.reviewer
                 new_total_rating = current_total_rating + rating_value
-                
-                product.reviewer_increment()
-                
-                product.refresh_from_db()
-                product.rating = new_total_rating / product.reviewer
-                product.save(update_fields=['rating'])
+                product.reviewer += 1
+                product.rating = round(new_total_rating / product.reviewer, 1)
+                product.save(update_fields=['rating', 'reviewer'])
                 
                 return redirect('ven_shop:show_product', id=product.id)
-                
         except (ValueError, TypeError):
             return redirect('ven_shop:purchase_success', id=product.id)
-
-    # Jika bukan POST, redirect ke home
+    
     return redirect('ven_shop:show_main')
 
 

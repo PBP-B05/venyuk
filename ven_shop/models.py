@@ -30,7 +30,3 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
-
-    def reviewer_increment(self):
-        self.reviewer += 1
-        self.save()
