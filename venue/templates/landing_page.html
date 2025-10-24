@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>VenYuk! - Sewa Lapangan & Temukan Komunitas Olahraga</title>
+{% endblock meta %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<!-- Hero Section -->
+<section class="relative h-[90vh] overflow-hidden">
+  <!-- Background image -->
+  <div class="absolute inset-0 bg-cover bg-center" 
+       style="background-image: url('{% static "images/landing_banner.png" %}');">
+  </div>
+
+  <!-- Red overlay with gradient for readability -->
+  <div class="absolute inset-0 bg-gradient-to-r from-[#1D1616]/90 via-[#8E1616]/80 to-[#D84040]/50"></div>
+
+  <!-- Content Grid -->
+  <div class="relative z-10 h-full grid grid-cols-1 md:grid-cols-5 items-center px-8 md:px-16">
+    
+    <!-- Text Section (3/5 width) -->
+    <div class="md:col-span-3 text-left text-[#EEEEEE] space-y-6">
+      <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]">
+        Selamat Datang di 
+        <span class="text-[#D84040]">VenYuk!</span>
+      </h1>
+      <p class="text-lg md:text-xl leading-relaxed max-w-xl text-[#EEEEEE]/90 drop-shadow-[0_3px_5px_rgba(0,0,0,0.3)]">
+        Platform yang menyediakan kebutuhan olahraga mulai dari venue, alat, teman, dan komunitas.
+      </p>
+      <a href="{% url 'venue:home_section' %}"
+         class="inline-block bg-[#D84040] hover:bg-[#8E1616] text-[#EEEEEE] font-semibold px-8 py-3 rounded-full transition-all duration-300 shadow-lg hover:scale-105">
+         Yuk Pesan Venue →
+      </a>
+    </div>
+
+    <!-- Image Section (2/5 width) -->
+    <div class="hidden md:flex justify-center items-end md:col-span-2 relative z-20">
+    <img src="{% static 'images/ronaldo.png' %}" 
+        alt="Cristiano Ronaldo"
+        class="object-contain h-[85%] drop-shadow-2xl transition-transform duration-500 hover:scale-105" />
+    </div>
+  </div>
+</section>
+
+<!-- SEWA LAPANGAN SECTION -->
+<section id="venue" class="py-16 bg-white">
+  <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+    <!-- Text -->
+    <div>
+      <h2 class="text-3xl font-bold text-rose-700 mb-4">Sewa lapangan dengan mudah dan cepat.</h2>
+      <p class="text-gray-700 text-lg mb-6">
+        Ada rencana berolahraga minggu ini tapi belum tahu mau main di mana? Atau tidak sempat jauh-jauh datang ke venue hanya untuk booking lapangan?
+        Yuk sewa venue!
+      </p>
+      <a href="{% url 'venue:home_section' %}"
+         class="inline-block bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-full transition">
+         Lihat Venue
+      </a>
+    </div>
+
+    <!-- Images -->
+    <div class="grid grid-cols-2 gap-4">
+      <img src="{% static 'images/placeholder.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
+      <img src="{% static 'images/placeholder.png' %}" alt="Venue 2" class="rounded-xl shadow-md hover:scale-105 transition">
+      <img src="{% static 'images/placeholder.png' %}" alt="Venue 3" class="rounded-xl shadow-md hover:scale-105 transition">
+      <img src="{% static 'images/placeholder.png' %}" alt="Venue 4" class="rounded-xl shadow-md hover:scale-105 transition">
+    </div>
+  </div>
+</section>
+
+<!-- TENTANG VENYUK SECTION -->
+<section id="tentang" class="py-20 bg-gray-50">
+  <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+    <!-- Image -->
+    <div class="flex justify-center">
+      <img src="{% static 'images/placeholder.png' %}" alt="Laptop Mockup" class="w-[80%] rounded-xl shadow-lg">
+    </div>
+
+    <!-- Text -->
+    <div>
+      <h2 class="text-3xl font-bold text-rose-700 mb-4 text-center">Tentang VenYuk!</h2>
+      <p class="text-gray-700 text-lg leading-relaxed mb-6 text-center">
+        Venyuk merupakan aplikasi berbasis web untuk melakukan berbagai hal yang berkaitan dengan olahraga, seperti sewa venue, sewa alat olahraga, beli alat olahraga, blog, bahkan bisa mencari teman buat olahraga bareng. <br>
+        Aplikasi ini dibuat oleh tim PBB B05 dengan 6 anggota, yaitu, Andi, Ello, Bintoro, Rasyad, Clairine, dan Zaka.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock content %}
