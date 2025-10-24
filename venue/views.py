@@ -33,7 +33,13 @@ def apply_filters(queryset, request):
 
     category = request.GET.get('category')
     if category:
-        queryset = queryset.filter(category=category)
+        # Filter untuk multi-category (CSV)
+        queryset = queryset.filter(
+            Q(category__icontains=category) |  # Category mengandung nilai yang dicari
+            Q(category__startswith=category + ',') |  # Category di awal
+            Q(category__endswith=',' + category) |  # Category di akhir
+            Q(category__contains=',' + category + ',')  # Category di tengah
+        )
 
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
@@ -78,7 +84,8 @@ def home_section(request):
         data = [{
             'id': str(venue.id),
             'name': venue.name,
-            'category': venue.get_category_display(),
+            'category': venue.get_categories_display(),  # Untuk display string
+            'categories_list': venue.get_categories_display_list(),  # Untuk tags dengan display names
             'price': venue.price,
             'rating': float(venue.rating),
             'address': venue.address,
@@ -90,7 +97,7 @@ def home_section(request):
     context = {
         'venues': venues,
         'categories': dict(Venue.CATEGORY_CHOICES),
-        'today': datetime.now().strftime('%Y-%m-%d'),  # Untuk min date di modal
+        'today': datetime.now().strftime('%Y-%m-%d'),
     }
     return render(request, 'homepage.html', context)
 

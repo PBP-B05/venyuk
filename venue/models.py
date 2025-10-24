@@ -1,9 +1,9 @@
 from django.db import models
 import uuid
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 
 class Venue(models.Model):
-
     CATEGORY_CHOICES = [
         ('sepak bola', 'Sepak Bola'),
         ('futsal', 'Futsal'),
@@ -23,8 +23,7 @@ class Venue(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='futsal')
-    # capacity = models.IntegerField(default=0)
+    category = models.TextField(blank=True)  # Menyimpan sebagai CSV: "padel,tennis,badminton"
     address = models.TextField(blank=True)
     thumbnail = models.ImageField(upload_to='venues/', blank=True, null=True)
     rating = models.FloatField(default=0.0)
@@ -35,6 +34,26 @@ class Venue(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def get_categories_list(self):
+        """Return categories as list"""
+        if self.category:
+            return [cat.strip() for cat in self.category.split(',')]
+        return []
+    
+    def get_categories_display(self):
+        """Return formatted categories string"""
+        categories = self.get_categories_list()
+        return ", ".join([dict(self.CATEGORY_CHOICES).get(cat, cat) for cat in categories])
+    
+    def get_categories_display_list(self):
+        """Return categories as list with display names"""
+        categories = self.get_categories_list()
+        return [dict(self.CATEGORY_CHOICES).get(cat, cat) for cat in categories]
+    
+    def set_categories(self, categories_list):
+        """Set categories from list"""
+        self.category = ",".join(categories_list)
 
 class Booking(models.Model):
     STATUS_CHOICES = [

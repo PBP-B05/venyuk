@@ -61,10 +61,14 @@
             {% endif %}
 
             <div class="p-5">
-                <!-- Tag -->
-                <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700 mb-2 inline-block">
-                    {{ venue.get_category_display }}
-                </span>
+              <!-- Multiple Categories Tags -->
+              <div class="flex flex-wrap gap-1 mb-2">
+                {% for category in venue.get_categories_display_list %}
+                  <span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">
+                      {{ category }}
+                  </span>
+                {% endfor %}
+              </div>
 
                 <!-- Nama Venue -->
                 <h3 class="text-lg font-semibold text-slate-900 mb-1">{{ venue.name }}</h3>
@@ -286,7 +290,7 @@ function updateVenues(venues) {
     const container = $('#venues-container');
     container.empty();
 
-    if (!venues.length) {
+    if (!venues || venues.length === 0) {
         container.append(`
             <div class="col-span-full text-center text-slate-500 py-10">
                 <img src="{% static 'images/placeholder.png' %}" class="mx-auto mb-4 opacity-70 w-32">
@@ -304,19 +308,26 @@ function updateVenues(venues) {
         const buttonText = isAvailable ? 'Book Now' : 'Not Available';
         const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price})` : '';
 
+        // Generate category tags dengan display names
+        const categoryTags = venue.categories_list && venue.categories_list.length > 0 
+            ? venue.categories_list.map(cat => 
+                `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${cat}</span>`
+              ).join('')
+            : `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">General</span>`;
+
         container.append(`
             <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
                 <img src="${venue.thumbnail || '{% static 'images/placeholder.png' %}'}"
                      class="w-full h-56 object-cover" alt="${venue.name}" loading="lazy">
                 <div class="p-5">
-                    <span class="px-2.5 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700 mb-2 inline-block">
-                        ${venue.category}
-                    </span>
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        ${categoryTags}
+                    </div>
                     <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
                     <div class="flex items-center text-slate-600 mb-2">
                         <span class="text-yellow-500 me-1">★</span>
                         <span class="font-semibold me-2">${venue.rating}</span>
-                        <span class="text-slate-500 text-sm">• ${venue.address ? venue.address.substring(0, 30) + '...' : ''}</span>
+                        <span class="text-slate-500 text-sm">• ${venue.address ? (venue.address.length > 30 ? venue.address.substring(0, 30) + '...' : venue.address) : ''}</span>
                     </div>
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-rose-600 font-semibold">Rp ${venue.price.toLocaleString('id-ID')}</span>
