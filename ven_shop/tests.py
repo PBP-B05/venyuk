@@ -2,7 +2,7 @@ import uuid
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from ven_shop.models import Product
+from ven_shop.models import Product, Purchased_Product
 from ven_shop.forms import ProductForm
 import json
 
@@ -211,3 +211,17 @@ class ProductViewTest(TestCase):
         response = self.client.post(reverse('ven_shop:submit_rating', args=[self.product.id]), {'rating': 'invalid'})
         self.product.refresh_from_db()
         self.assertEqual(self.product.reviewer, initial_reviewer)
+
+    def test_purchase_history(self):
+        # Create purchase menggunakan product yang sudah ada
+        Purchased_Product.objects.create(user=self.user, product=self.product)
+        
+        response = self.client.get(reverse('ven_shop:purchase_history'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['purchases']), 1)
+        
+def test_purchase_history_empty(self):
+    # Test tanpa purchase
+    response = self.client.get(reverse('ven_shop:purchase_history'))
+    self.assertEqual(response.status_code, 200)
+    self.assertEqual(len(response.context['purchases']), 0)

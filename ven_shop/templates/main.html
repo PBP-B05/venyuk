@@ -31,21 +31,21 @@
 
 {% block content %}
 <div class="bg-white min-h-screen">
-
+  {% include 'navbar.html' %}
   <!-- Hero Section with Carousel -->
   <section class="relative text-white overflow-hidden">
     <div class="carousel-container relative">
       <div class="carousel-wrapper">
-        <!-- Slide 1 - Black Background -->
+        <!-- Slide 1 -->
         <div class="carousel-slide bg-black">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div class="flex flex-col lg:flex-row items-center gap-8">
               <div class="lg:w-1/2">
                 <h2 class="text-5xl font-bold mb-4">
-                  <span class="text-[#D84040] block">Persiapan</span>
-                  <span class="text-[#D84040]">Marathon</span>
+                  <span class="text-[#D84040] block">Gear Terbaik</span>
+                  <span class="text-[#D84040]">Untuk Olahraga</span>
                 </h2>
-                <p class="text-xl mb-8">Temukan sepatu, pakaian, aksesoris, dan suplemen terbaru.</p>
+                <p class="text-xl mb-8">Koleksi perlengkapan olahraga dari brand ternama.</p>
                 <a href="#products-section" class="bg-[#D84040] text-white px-8 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors inline-block scroll-to-products">
                   BELANJA SEKARANG
                 </a>
@@ -57,19 +57,19 @@
           </div>
         </div>
 
-        <!-- Slide 2 - Red Background -->
+        <!-- Slide 2 -->
         <div class="carousel-slide bg-[#D84040]">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div class="flex flex-col lg:flex-row items-center gap-8">
               <div class="lg:w-1/2">
                 <h2 class="text-5xl font-bold mb-4">
-                  <span class="text-white block">Gear Terbaik</span>
-                  <span class="text-white">Untuk Olahraga</span>
+                  <span class="text-white block">Mau Jual</span>
+                  <span class="text-white">Perlengkapan?</span>
                 </h2>
-                <p class="text-xl mb-8 text-white">Koleksi lengkap perlengkapan olahraga dari brand ternama.</p>
-                <a href="#products-section" class="bg-white text-[#D84040] px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block scroll-to-products">
-                  BELANJA SEKARANG
-                </a>
+                <p class="text-xl mb-8 text-white">Ingin jual perlengkapan olahraga yang sudah tak terpakai?</p>
+                <button src="" class="bg-white text-[#D84040] px-8 py-3 rounded-md font-medium hover:bg-[#fefefe] transition-colors inline-block">
+                  Hubungi Kami
+                </button>
               </div>
               <div class="lg:w-1/2 flex justify-center">
                 <img src="{% static 'image/marathon-gear.jpg' %}" alt="Marathon gear and equipment" class="w-full max-w-md object-cover rounded-lg shadow-xl">
@@ -121,6 +121,10 @@
           {% if user.is_superuser %}
           <a href="{% url 'ven_shop:create_product' %}" class="flex items-center gap-2 bg-[#D84040] text-white px-6 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors shadow-md hover:shadow-lg whitespace-nowrap">
             <span>Add Product</span>
+          </a>
+          {% else %}
+          <a href="{% url 'ven_shop:purchase_history' %}" class="flex items-center gap-2 bg-[#D84040] text-white px-6 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors shadow-md hover:shadow-lg whitespace-nowrap">
+            <span>Transaction History</span>
           </a>
           {% endif %}
         </div>
