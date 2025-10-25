@@ -1,4 +1,4 @@
-from ven_shop.models import Product
+from ven_shop.models import Product, Purchased_Product
 from django.http import HttpResponse
 from django.core import serializers
 from django.shortcuts import render, redirect, get_object_or_404
@@ -139,13 +139,19 @@ def delete_product(request, id):
 @csrf_exempt
 def checkout_product(request, id):
     product = get_object_or_404(Product, pk=id)
-
+    
     if request.method == 'POST':
         product.refresh_from_db() 
         
         if product.stock > 0:
             product.stock = F('stock') - 1
             product.save()
+            
+            product.refresh_from_db() 
+            Purchased_Product.objects.create(
+                user=request.user,
+                product=product
+            )
             
             return redirect('ven_shop:purchase_success', id=product.id)
         else:
@@ -154,7 +160,7 @@ def checkout_product(request, id):
                 'error': 'Maaf, stok produk ini baru saja habis.'
             }
             return render(request, 'checkout.html', context)
-
+    
     context = {'product': product}
     return render(request, 'checkout.html', context)
 
@@ -184,6 +190,16 @@ def rating(request, id):
             return redirect('ven_shop:purchase_success', id=product.id)
     
     return redirect('ven_shop:show_main')
+
+@login_required(login_url='/authenticate/login/')
+@csrf_exempt
+def purchase_history(request):
+    purchases = Purchased_Product.objects.filter(user=request.user).select_related('product').order_by('-purchase_date')
+    
+    context = {
+        'purchases': purchases
+    }
+    return render(request, 'purchase_history.html', context)
 
 
 
