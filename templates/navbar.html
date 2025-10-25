@@ -1,5 +1,5 @@
 {% load static %}
-{% include 'modal.html' %}
+
 <nav class="navbar">
     <a href="/" class="logo">
         <img src="{% static 'images/logo_venyuk.png' %}" alt="Logo Venyuk">
@@ -7,7 +7,7 @@
 
     <ul class="nav-links">
         <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
-        <li><a href="#promo">Promo</a></li>
+        <li><a href="{% url 'promo:promo-list' %}">Promo</a></li>
         <li><a href="#ven-shop">Ven-Shop</a></li>
         <li><a href="{% url 'match_up:show_matches' %}">Match Up</a></li>
         <li><a href="#versus">Versus</a></li>
@@ -30,10 +30,8 @@
             </div>
         </div>
     {% else %}
-    <button onclick="openLoginModal()"
-        class="bg-[#D84040] text-white font-semibold px-4 py-2 rounded-md hover:bg-[#8E1616] transition-all duration-300 shadow-md">
-        Masuk
-    </button>
+    <!-- Login Button -->
+        <a href="{% url 'authenticate:login' %}" class="btn-masuk">MASUK</a>
     {% endif %}
 
     <div class="hamburger">

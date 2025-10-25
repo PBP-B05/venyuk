@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ promo.title }}{% endblock title %}
+
+{% block content %}
+<!-- Include Navbar Anda -->
+{% include "navbar.html" %}
+
+<div class="min-h-screen bg-gray-100 py-12">
+    <div class="container mx-auto px-4 md:px-8">
+        
+        <!-- Kontainer Detail -->
+        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+            
+            <!-- Gambar Utama -->
+            <div class="w-full h-64 md:h-96">
+                <img 
+                    src="{% if promo.thumbnail %}{{ promo.thumbnail.url }}{% else %}https://placehold.co/1200x600/333333/FFFFFF?text=Promo: {{ promo.title|truncatechars:20 }}{% endif %}" 
+                    alt="Header {{ promo.title }}" 
+                    class="w-full h-full object-cover"
+                    onerror="this.onerror=null;this.src='https://placehold.co/1200x600/333333/FFFFFF?text=Promo';">
+            </div>
+
+            <!-- Konten (Grid 2 Kolom) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 md:p-12">
+
+                <!-- Kolom Kiri (Deskripsi) -->
+                <div class="md:col-span-2">
+                    <h1 class="text-4xl font-extrabold text-gray-900 mb-4">
+                        {{ promo.title }}
+                    </h1>
+                    
+                    <!-- Deskripsi Lengkap -->
+                    <div class="prose max-w-none text-gray-700 text-lg leading-relaxed space-y-4">
+                        <!-- 
+                          Filter |safe diperlukan jika deskripsi Anda berisi HTML
+                          Gunakan |linebreaksbr jika deskripsi Anda hanya teks biasa
+                        -->
+                        {{ promo.description|linebreaksbr }}
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan (Sidebar Info) -->
+                <div class="md:col-span-1">
+                    <div class="bg-gray-50 p-6 rounded-lg border sticky top-10">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-5 text-center">Detail Promo</h3>
+
+                        <!-- Kode Promo -->
+                        <div class="mb-6 text-center">
+                            <span class="text-gray-600 font-medium block text-sm mb-1">Kode Promo Anda:</span>
+                            <span class="font-mono text-2xl font-bold text-gray-900 bg-gray-200 px-4 py-2 rounded-md inline-block tracking-wider">
+                                {{ promo.code }}
+                            </span>
+                        </div>
+
+                        <!-- Info Detail -->
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Diskon:</span>
+                                <span class="text-red-600 font-bold text-lg">{{ promo.amount_discount }}%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Kategori:</span>
+                                <span class="font-semibold text-gray-800 capitalize">{{ promo.get_category_display }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Maks. Pengguna:</span>
+                                <span class="font-semibold text-gray-800">{{ promo.max_uses }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Mulai:</span>
+                                <span class="font-semibold text-gray-800">{{ promo.start_date|date:"d M Y" }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Berakhir:</span>
+                                <span class="font-semibold text-gray-800">{{ promo.end_date|date:"d M Y" }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 font-medium">Status:</span>
+                                {% if promo.is_promo_active %}
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">Aktif</span>
+                                {% else %}
+                                    <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">Kadaluarsa</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tombol Edit (Hanya untuk user login) -->
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'promo:promo-update' promo.pk %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 mt-8 shadow-md">
+                            Edit Promo Ini
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div> <!-- end grid content -->
+
+        </div> <!-- end container detail -->
+    </div>
+</div>
+{% endblock content %}
+
