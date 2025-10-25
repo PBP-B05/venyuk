@@ -9,8 +9,10 @@ class CommunityAdmin(admin.ModelAdmin):
 
 @admin.register(Challenge)
 class ChallengeAdmin(admin.ModelAdmin):
-    list_display = ("title", "sport", "match_category", "host", "start_at", "status", "cost_per_person")
-    search_fields = ("title", "description")
-    list_filter = ("sport", "match_category", "status", "start_at")
+    list_display = ("title", "sport", "host", "start_at", "status",
+                    "cost_per_person", "prize_pool", "venue_name",
+                    "players_joined")
+    search_fields = ("title", "venue_name")
+    list_filter = ("sport", "status", "start_at")
     autocomplete_fields = ("host", "opponent")
 

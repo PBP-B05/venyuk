@@ -1,155 +1,218 @@
 {% extends "base.html" %}
-{% load static humanize %}
+{% load static %}
 
 {% block content %}
 
 <div class="w-full h-[260px] md:h-[300px] bg-cover bg-center"
-     style="background-image:url('{% static "images/hero_versus.jpg" %}');">
+     style="background-image:url({% static 'images/versus_banner3.jpg' %});">
   <div class="w-full h-full bg-black/20"></div>
 </div>
 
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
 
-  <div class="flex items-center justify-between gap-3 flex-wrap">
-    <h1 class="text-xl md:text-2xl font-semibold bg-white px-3 py-2 rounded-lg shadow">
-      Versus
-    </h1>
+  <div class="flex items-center justify-between gap-3 flex-wrap bg-white px-3 py-2 rounded-lg shadow">
+    <h1 class="text-xl md:text-2xl font-semibold">Versus</h1>
 
-    <div class="flex items-center gap-2">
-      <form method="get" class="hidden sm:flex items-center gap-2">
-        <select name="sport"
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-          <option value="">Semua Olahraga</option>
-          {% if sports %}
-            {% for val,label in sports %}
-              <option value="{{ val }}" {% if sport_selected == val %}selected{% endif %}>
-                {{ label }}
-              </option>
-            {% endfor %}
-          {% endif %}
-        </select>
-        <button class="rounded-full bg-rose-500 text-white px-4 py-2 text-sm">
-          Filter
-        </button>
-      </form>
+    <form id="filter-form" class="flex items-center gap-2">
+      <select id="filter-sport"
+              class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
+        <option value="">Semua Olahraga</option>
+        {% for val,label in sports %}
+          <option value="{{ val }}" {% if sport_selected == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button id="btn-apply" type="submit"
+              class="rounded-full text-white px-4 py-2 text-sm hover:opacity-90 transition"
+              style="background-color:#D84040">
+        Filter
+      </button>
+    </form>
 
+    <a href="{% url 'versus:create' %}"
+       class="inline-flex items-center rounded-full text-white px-4 py-2 text-sm hover:opacity-90 transition"
+       style="background-color:#D84040">
+      + Create VERSUS
+    </a>
+  </div>
+
+  <div id="vs-loading" class="bg-white rounded-2xl border border-gray-200 p-10 mt-6 text-center hidden">
+    <div class="animate-spin mx-auto h-8 w-8 border-2 rounded-full"
+         style="border-color:#D84040;border-top-color:transparent"></div>
+    <p class="text-gray-600 mt-3">Loading matches...</p>
+  </div>
+
+  <div id="vs-error" class="bg-white rounded-2xl border p-10 mt-6 text-center hidden"
+       style="border-color:#D84040">
+    <div class="text-2xl mb-2">⚠️</div>
+    <p class="text-gray-700">Gagal memuat data. Coba lagi nanti.</p>
+  </div>
+
+  <div id="vs-empty" class="bg-white rounded-2xl border border-dashed border-gray-300 p-10 mt-6 text-center hidden">
+    <div class="text-4xl mb-2">🕳️</div>
+    <h3 class="text-lg font-semibold">Belum ada Versus</h3>
+    <p class="text-gray-600 mt-1">Coba ubah filter, atau buat Versus baru sekarang.</p>
+    <div class="mt-4">
       <a href="{% url 'versus:create' %}"
-         class="inline-flex items-center rounded-full bg-rose-600 text-white px-4 py-2 text-sm hover:bg-rose-700 transition">
-        + Create VERSUS
+         class="inline-flex items-center rounded-full text-white px-5 py-2 text-sm hover:opacity-90 transition"
+         style="background-color:#D84040">
+         + Create VERSUS
       </a>
     </div>
   </div>
 
-  <form method="get" class="sm:hidden mt-4 flex items-center gap-2">
-    <select name="sport"
-            class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-      <option value="">Semua Olahraga</option>
-      {% if sports %}
-        {% for val,label in sports %}
-          <option value="{{ val }}" {% if sport_selected == val %}selected{% endif %}>
-            {{ label }}
-          </option>
-        {% endfor %}
-      {% endif %}
-    </select>
-    <button class="rounded-lg bg-rose-500 text-white px-4 py-2 text-sm">
-      Filter
-    </button>
-  </form>
-
-  {% if challenges %}
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {% for ch in challenges %}
-        <div class="bg-white rounded-2xl shadow p-6">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <img src="{% static 'images/logos/realmadrid.png' %}" alt=""
-                   class="w-12 h-12 object-contain">
-              <div>
-                <p class="text-sm text-gray-500">
-                  {{ ch.get_sport_display|default:ch.sport }}
-                </p>
-                <a href="{% url 'versus:detail' ch.pk %}" class="block">
-                  <h3 class="text-lg font-semibold leading-tight hover:underline">
-                    {{ ch.title }}
-                  </h3>
-                </a>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              {% if ch.match_category %}
-                <span class="inline-flex items-center rounded-full bg-rose-100 text-rose-700 text-xs font-medium px-3 py-1">
-                  {{ ch.get_match_category_display|default:ch.match_category }}
-                </span>
-              {% endif %}
-              {% if ch.status %}
-                <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1">
-                  {{ ch.get_status_display|default:ch.status }}
-                </span>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="mt-4 space-y-3 text-sm text-gray-700">
-            <div class="flex items-center gap-2">
-              <span>🗓️</span>
-              <span>{{ ch.start_at|date:"j F Y • H:i" }}</span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <span>💲</span>
-              {% if ch.cost_per_person %}
-                <span>Rp {{ ch.cost_per_person|intcomma }} / orang</span>
-              {% else %}
-                <span>Gratis</span>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="mt-5 flex items-center justify-between">
-            <a href="{% url 'versus:detail' ch.pk %}"
-               class="text-sm text-rose-600 hover:text-rose-700 font-medium">
-              Lihat detail →
-            </a>
-
-            {% if ch.status|lower == "open" %}
-              <form method="post" action="{% url 'versus:join' ch.pk %}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="rounded-full bg-rose-600 text-white px-4 py-2 text-sm hover:bg-rose-700 transition">
-                  Join
-                </button>
-              </form>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="mt-10 bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
-      <div class="text-4xl mb-2">🕳️</div>
-      <h3 class="text-lg font-semibold">Belum ada Versus yang terbuka</h3>
-      <p class="text-gray-600 mt-1">Coba ubah filter, atau buat Versus baru sekarang.</p>
-
-      <div class="mt-4">
-        <a href="{% url 'versus:create' %}"
-           class="inline-flex items-center rounded-full bg-rose-600 text-white px-5 py-2 text-sm hover:bg-rose-700 transition">
-           + Create VERSUS
-        </a>
-      </div>
-    </div>
-  {% endif %}
+  <div id="vs-grid" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
 </div>
 
 <a href="{% url 'versus:create' %}"
-   class="fixed bottom-4 right-4 sm:hidden shadow-lg rounded-full bg-rose-600 text-white px-5 py-3 text-sm">
+   class="fixed bottom-4 right-4 sm:hidden shadow-lg rounded-full text-white px-5 py-3 text-sm hover:opacity-90 transition"
+   style="background-color:#D84040">
    + Create VERSUS
 </a>
 
+<script>
+  const API_LIST_URL = "{% url 'versus:api_list' %}";
+  const API_JOIN_URL = (id) => `{% url 'versus:api_join' 0 %}`.replace('/0/', `/${id}/`);
+
+  const gridEl = document.getElementById('vs-grid');
+  const loadingEl = document.getElementById('vs-loading');
+  const errorEl = document.getElementById('vs-error');
+  const emptyEl = document.getElementById('vs-empty');
+  const filterForm = document.getElementById('filter-form');
+  const filterSport = document.getElementById('filter-sport');
+
+  function showState({loading=false, error=false, empty=false, grid=false}) {
+    loadingEl.classList.toggle('hidden', !loading);
+    errorEl.classList.toggle('hidden', !error);
+    emptyEl.classList.toggle('hidden', !empty);
+    gridEl.classList.toggle('hidden', !grid);
+  }
+
+  function rupiah(x) {
+    const n = Number(x || 0);
+    return n.toLocaleString('id-ID');
+  }
+
+  function sportIconPath(s) {
+    const m = {
+      "badminton": "badminton.png",
+      "basketball": "basketball.png",
+      "futsal": "futsal.png",
+      "sepak bola": "soccer.png",
+      "mini soccer": "soccer.png",
+      "tennis": "tennis.png",
+      "voli": "volleyball.png",
+      "volleyball": "volleyball.png",
+    };
+    return m[s?.toLowerCase?.()] || "default.png";
+  }
+
+  function buildCard(ch) {
+    const el = document.createElement('div');
+    el.className = "bg-white rounded-2xl shadow p-6 flex flex-col";
+
+    const dateStr = new Date(ch.start_at).toLocaleString('id-ID', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const icon = sportIconPath(ch.sport);
+
+    el.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/sports/' %}${icon}" alt="${ch.sport_label}" class="w-12 h-12 object-contain">
+          <div>
+            <p class="text-sm text-gray-500">${ch.sport_label} • ${ch.match_category_label}</p>
+            <a href="${ch.detail_url}" class="block">
+              <h3 class="text-lg font-semibold leading-tight hover:underline">${ch.title}</h3>
+            </a>
+          </div>
+        </div>
+        <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1">
+          ${ch.status_label}
+        </span>
+      </div>
+
+      <div class="mt-4 space-y-3 text-sm text-gray-700">
+        <div class="flex items-center gap-2"><span>🗓️</span><span>${dateStr}</span></div>
+        <div class="flex items-center gap-2"><span>📍</span><span>${ch.venue_name || '-'}</span></div>
+        <div class="flex items-center gap-2"><span>💲</span>
+          ${ch.cost_per_person ? `Rp ${rupiah(ch.cost_per_person)} / orang` : `<span>Gratis</span>`}
+        </div>
+        ${Number(ch.prize_pool) > 0 ? `<div class="flex items-center gap-2"><span>🏆</span><span>Prize Pool: Rp ${rupiah(ch.prize_pool)}</span></div>` : ``}
+        <div class="flex items-center gap-2"><span>👥</span><span>${ch.players_joined}/${ch.max_players} pemain</span></div>
+      </div>
+
+      <div class="mt-5 flex items-center justify-between">
+        <a href="${ch.detail_url}" class="text-sm font-medium hover:opacity-80" style="color:#D84040">Lihat detail →</a>
+        ${ch.status.toLowerCase() === "open" ? `
+          <button data-join="${ch.id}"
+                  class="rounded-full text-white px-4 py-2 text-sm hover:opacity-90 transition"
+                  style="background-color:#D84040">
+            Join
+          </button>` : ``}
+      </div>
+    `;
+
+    const btn = el.querySelector('[data-join]');
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Yakin mau join matchup ini?')) return;  
+        btn.disabled = true;
+        try {
+          const res = await fetch(API_JOIN_URL(ch.id), {
+            method: "POST",
+            headers: { "Accept": "application/json" },
+          });
+          if (!res.ok) throw new Error("Join gagal");
+          await loadChallenges(); 
+        } catch (e) {
+          console.error(e);
+          alert("Gagal join. Coba lagi.");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
+    return el;
+  }
+
+  function renderList(items) {
+    gridEl.innerHTML = "";
+    items.forEach(ch => gridEl.appendChild(buildCard(ch)));
+  }
+
+  async function loadChallenges() {
+    showState({ loading: true });
+    try {
+      const params = new URLSearchParams();
+      const s = (filterSport.value || "").trim();
+      if (s) params.set("sport", s);
+
+      const res = await fetch(`${API_LIST_URL}?${params.toString()}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        showState({ empty: true });
+      } else {
+        renderList(data);
+        showState({ grid: true });
+      }
+    } catch (e) {
+      console.error(e);
+      showState({ error: true });
+    }
+  }
+
+  filterForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loadChallenges();
+  });
+
+  loadChallenges();
+</script>
 {% endblock content %}
-
-
-
-
-

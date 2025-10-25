@@ -1,5 +1,4 @@
-# versus/urls.py
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 app_name = "versus"
@@ -9,10 +8,9 @@ urlpatterns = [
     path("create/", views.create_challenge, name="create"),
     path("<int:pk>/", views.challenge_detail, name="detail"),
     path("<int:pk>/join/", views.join_challenge, name="join"),
-    path("accounts/", include("django.contrib.auth.urls")),
-    path("create/", views.create_challenge, name="create"),
-    path("<int:pk>/", views.challenge_detail, name="detail"),
-    path("<int:pk>/join/", views.join_challenge, name="join"),
-    path("", views.index, name="index"),
-    
+
+    #AJAX / JSON endpoints
+    path("api/challenges/", views.api_challenge_list, name="api_list"),
+    path("api/challenges/<int:pk>/", views.api_challenge_detail, name="api_detail"),
+    path("api/challenges/<int:pk>/join/", views.api_join_challenge, name="api_join"),
 ]

@@ -1,4 +1,3 @@
-# versus/models.py
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -34,32 +33,30 @@ class Challenge(models.Model):
         CLOSED = "closed", "Closed"
         COMPLETED = "completed", "Completed"
 
-    # >>> Tambahan: kategori matchup
     class MatchCategory(models.TextChoices):
-        RO16          = "RO16", "RO16"
-        CUP_FINAL     = "Cup Final", "Cup Final"
-        LEAGUE        = "League", "League"
-        QUARTER_FINAL = "Quarter Final", "Quarter Final"
-        SEMI_FINAL    = "Semi Final", "Semi Final"
+        RO16          = "ro16", "RO16"
+        QUARTER_FINAL = "quarter_final", "Quarter Final"
+        SEMI_FINAL    = "semi_final", "Semi Final"
+        CUP_FINAL     = "cup_final", "Cup Final"
+        LEAGUE        = "league", "League"
 
     title = models.CharField(max_length=160)
     sport = models.CharField(max_length=20, choices=SportChoices.choices)
-    host = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="hosted_challenges")
-    opponent = models.ForeignKey(Community, on_delete=models.SET_NULL, null=True, blank=True, related_name="joined_challenges")
-
-    start_at = models.DateTimeField()
-    cost_per_person = models.PositiveIntegerField(null=True, blank=True)  # rupiah/orang
-    banner_url = models.URLField(blank=True)
-    description = models.TextField(blank=True)
-
-    # >>> field baru
-    match_category = models.CharField(
+    match_category = models.CharField(          
         max_length=20,
         choices=MatchCategory.choices,
         default=MatchCategory.LEAGUE,
-        verbose_name="Kategori Matchup",
     )
 
+    host = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="hosted_challenges")
+    opponent = models.ForeignKey(Community, on_delete=models.SET_NULL, null=True, blank=True, related_name="joined_challenges")
+    start_at = models.DateTimeField()
+    cost_per_person = models.PositiveIntegerField(null=True, blank=True)
+    prize_pool = models.PositiveIntegerField(null=True, blank=True, default=0)  
+    venue_name = models.CharField(max_length=120, blank=True)                   
+    players_joined = models.PositiveIntegerField(default=0)                     
+    banner_url = models.URLField(blank=True)
+    description = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -71,3 +68,30 @@ class Challenge(models.Model):
 
     def get_absolute_url(self):
         return reverse("versus:detail", args=[self.pk])
+
+    SPORT_MAX = {
+        "sepak bola": 22,
+        "futsal": 10,
+        "mini soccer": 14,
+        "basketball": 10,
+        "voli": 12,      
+        "tennis": 4,     
+        "badminton": 4,
+        "padel": 4,
+        "pickle ball": 4,
+        "squash": 4,
+        "biliard": 4,
+        "golf": 4,       
+        "shooting": 1,   
+        "tennis meja": 4,
+    }
+
+    @property
+    def max_players(self) -> int:
+        return self.SPORT_MAX.get((self.sport or "").lower(), 0)
+
+    def try_close(self):
+        """Tutup otomatis jika kuota terpenuhi."""
+        if self.status == self.Status.OPEN and self.players_joined >= self.max_players > 0:
+            self.status = self.Status.CLOSED
+            self.save(update_fields=["status"])
