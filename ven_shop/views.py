@@ -16,6 +16,7 @@ from django.utils.html import strip_tags
 from ven_shop.forms import ProductForm
 from django.db.models import F
 import requests
+import uuid
 
 
 
@@ -165,7 +166,7 @@ def checkout_product(request, id):
                 payload = {
                     'email': email,
                     'address': address,
-                    'product_id': str(product.id),  
+                    'transaction_id': str(uuid.uuid4()),  
                     'product_name': product.title,
                 }
                 try:
