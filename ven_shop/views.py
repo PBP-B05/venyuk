@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from django.utils.html import strip_tags
 from ven_shop.forms import ProductForm
 from django.db.models import F
+import requests
 
 
 
@@ -154,6 +155,25 @@ def checkout_product(request, id):
                 user=request.user,
                 product=product
             )
+            
+            # Ambil email dari form
+            email = request.POST.get('email', '').strip()  # Wajib, strip whitespace
+            address = request.POST.get('address', '').strip()
+            if email:  # Pastikan email ada
+                # Panggil webhook dengan parameter email
+                webhook_url = 'https://ligia-quantummechanical-ida.ngrok-free.dev/webhook/8d8ced10-4e23-4c39-9dbb-a9dea0409259'  # Ganti dengan URL webhook Anda
+                payload = {
+                    'email': email,
+                    'address': address,
+                    'product_id': str(product.id),  
+                    'product_name': product.title,
+                }
+                try:
+                    response = requests.get(webhook_url, json=payload, timeout=10)
+                    # Opsional: Log response jika diperlukan (misalnya print(response.status_code))
+                except requests.RequestException as e:
+                    # Handle error webhook jika diperlukan (misalnya log, tapi jangan hentikan proses)
+                    print(f"Webhook error: {e}")  # Ganti dengan logging proper
             
             return redirect('ven_shop:purchase_success', id=product.id)
         else:
