@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from .models import UserProfile
 
 class RegisterForm(UserCreationForm):
     username = forms.CharField(
@@ -54,3 +55,66 @@ class LoginForm(forms.Form):
             'placeholder': 'Password'
         })
     )
+    
+class UserEditForm(forms.ModelForm):
+    """
+    Form untuk mengedit data bawaan User: 
+    first_name, last_name, email
+    """
+    first_name = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Nama Depan'
+        }), 
+        required=False
+    )
+    last_name = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Nama Belakang'
+        }), 
+        required=False
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Email'
+        })
+    )
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email')
+
+
+class UserProfileEditForm(forms.ModelForm):
+    """
+    Form untuk mengedit data tambahan di UserProfile: 
+    alamat, no_telepon, profile_pic
+    """
+    alamat = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Alamat Lengkap Anda',
+            'rows': 3
+        }), 
+        required=False
+    )
+    no_telepon = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': '08...'
+        }), 
+        required=False
+    )
+    profile_pic = forms.ImageField(
+        widget=forms.FileInput(attrs={
+            'class': 'form-control'
+        }), 
+        required=False
+    )
+
+    class Meta:
+        model = UserProfile
+        # Ini adalah field dari model UserProfile
+        fields = ('alamat', 'no_telepon', 'profile_pic')

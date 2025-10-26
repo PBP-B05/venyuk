@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>Sports Products</title>
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  .carousel-container {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .carousel-wrapper {
+    display: flex;
+    transition: transform 0.6s ease-in-out;
+  }
+  
+  .carousel-wrapper.no-transition {
+    transition: none;
+  }
+  
+  .carousel-slide {
+    min-width: 100%;
+    flex-shrink: 0;
+  }
+</style>
+{% endblock meta %}
+
+{% block content %}
+<div class="bg-white min-h-screen">
+  {% include 'navbar.html' %}
+  <!-- Hero Section with Carousel -->
+  <section class="relative text-white overflow-hidden">
+    <div class="carousel-container relative pt-16">
+      <div class="carousel-wrapper">
+        <!-- Slide 1 -->
+        <div class="carousel-slide bg-black">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="flex flex-col lg:flex-row items-center gap-8">
+              <div class="lg:w-1/2">
+                <h2 class="text-5xl font-bold mb-4">
+                  <span class="text-[#D84040] block">Gear Terbaik</span>
+                  <span class="text-[#D84040]">Untuk Olahraga</span>
+                </h2>
+                <p class="text-xl mb-8">Koleksi perlengkapan olahraga dari brand ternama.</p>
+                <a href="#products-section" class="bg-[#D84040] text-white px-8 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors inline-block scroll-to-products">
+                  BELANJA SEKARANG
+                </a>
+              </div>
+              <div class="lg:w-1/2 flex justify-center">
+                <img src="{% static 'image/runner-hero.jpg' %}" alt="Runner preparing for marathon" class="w-full max-w-md object-cover rounded-lg shadow-xl">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="carousel-slide bg-[#D84040]">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="flex flex-col lg:flex-row items-center gap-8">
+              <div class="lg:w-1/2">
+                <h2 class="text-5xl font-bold mb-4">
+                  <span class="text-white block">Mau Jual</span>
+                  <span class="text-white">Perlengkapan?</span>
+                </h2>
+                <p class="text-xl mb-8 text-white">Ingin jual perlengkapan olahraga yang sudah tak terpakai?</p>
+                <button src="" class="bg-white text-[#D84040] px-8 py-3 rounded-md font-medium hover:bg-[#fefefe] transition-colors inline-block">
+                  Hubungi Kami
+                </button>
+              </div>
+              <div class="lg:w-1/2 flex justify-center">
+                <img src="{% static 'image/marathon-gear.jpg' %}" alt="Marathon gear and equipment" class="w-full max-w-md object-cover rounded-lg shadow-xl">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Arrows -->
+      <button id="prevSlide" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full transition-all z-10">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <button id="nextSlide" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full transition-all z-10">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+
+      <!-- Dots Navigation -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        <button class="carousel-dot active w-3 h-3 rounded-full bg-white transition-all" data-slide="0"></button>
+        <button class="carousel-dot w-3 h-3 rounded-full bg-white/50 transition-all" data-slide="1"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products Section with Sidebar Nempel Kiri -->
+  <div class="flex">
+    <!-- Sidebar Fixed di Kiri -->
+    <aside class="hidden lg:block w-64 flex-shrink-0 bg-gray-50">
+      <div class="sticky top-0 h-screen overflow-y-auto">
+        {% include 'sidebar.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 min-w-0">
+      <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Section Title with Add Product Button -->
+        <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Our Latest Product</h1>
+            <p class="text-gray-600 mt-2">Produk terbaru dan terbaik untuk kebutuhan olahraga Anda</p>
+          </div>
+          <!-- Add Product Button -->
+          {% if user.is_superuser %}
+          <a href="{% url 'ven_shop:create_product' %}" class="flex items-center gap-2 bg-[#D84040] text-white px-6 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors shadow-md hover:shadow-lg whitespace-nowrap">
+            <span>Add Product</span>
+          </a>
+          {% else %}
+          <a href="{% url 'ven_shop:purchase_history' %}" class="flex items-center gap-2 bg-[#D84040] text-white px-6 py-3 rounded-md font-medium hover:bg-[#8E1616] transition-colors shadow-md hover:shadow-lg whitespace-nowrap">
+            <span>Transaction History</span>
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Products Grid -->
+        <div class="products-container" id="products-container">
+          {% if not Product_list %}
+            <div id="products-section" class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+              </svg>
+              <p class="text-gray-600 mt-4 text-lg">Tidak ada produk tersedia saat ini.</p>
+              {% if user.is_superuser %}
+              <a href="{% url 'ven_shop:create_product' %}" class="inline-block mt-4 text-[#D84040] hover:text-[#8E1616] font-medium">
+                Tambahkan produk pertama Anda →
+              </a>
+              {% endif %}
+            </div>
+          {% else %}
+            <!-- Grid dengan 5 kolom per row -->
+            <div id="products-section" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {% for product in Product_list %}
+                {% include 'card_product.html' with product=product %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Sidebar Toggle -->
+  <div class="lg:hidden fixed bottom-4 right-4 z-50">
+    <button id="mobileSidebarToggle" class="bg-[#D84040] text-white p-4 rounded-full shadow-lg hover:bg-[#8E1616] transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="mobileSidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
+    <div class="w-64 h-full bg-white overflow-y-auto">
+      <div class="p-4 flex justify-between items-center border-b">
+        <h3 class="font-bold text-lg">Filter Kategori</h3>
+        <button id="closeMobileSidebar" class="text-gray-600 hover:text-gray-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      {% include 'sidebar.html' %}
+    </div>
+  </div>
+  {% include 'chatbot.html' %}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Carousel functionality
+    let currentSlide = 0;
+    const carouselWrapper = document.querySelector('.carousel-wrapper');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    const totalSlides = slides.length;
+    let autoPlayInterval;
+    let isTransitioning = false;
+
+    function updateDots() {
+      dots.forEach((dot, i) => {
+        if (i === currentSlide) {
+          dot.classList.remove('bg-white/50');
+          dot.classList.add('active', 'bg-white');
+        } else {
+          dot.classList.remove('active', 'bg-white');
+          dot.classList.add('bg-white/50');
+        }
+      });
+    }
+
+    function showSlide(index, instant = false) {
+      if (isTransitioning) return;
+      
+      isTransitioning = true;
+      
+      // Normalize index
+      if (index >= totalSlides) {
+        currentSlide = 0;
+      } else if (index < 0) {
+        currentSlide = totalSlides - 1;
+      } else {
+        currentSlide = index;
+      }
+      
+      // Apply transition
+      if (instant) {
+        carouselWrapper.classList.add('no-transition');
+      } else {
+        carouselWrapper.classList.remove('no-transition');
+      }
+      
+      // Move to slide
+      carouselWrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+      
+      // Update dots
+      updateDots();
+      
+      // Reset transition flag
+      setTimeout(() => {
+        isTransitioning = false;
+      }, instant ? 0 : 600);
+    }
+
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      showSlide(currentSlide - 1);
+    }
+
+    function startAutoPlay() {
+      stopAutoPlay(); // Clear any existing interval
+      autoPlayInterval = setInterval(nextSlide, 5000);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+      }
+    }
+
+    // Navigation buttons
+    document.getElementById('nextSlide').addEventListener('click', function() {
+      nextSlide();
+      startAutoPlay();
+    });
+
+    document.getElementById('prevSlide').addEventListener('click', function() {
+      prevSlide();
+      startAutoPlay();
+    });
+
+    // Dots navigation
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', function() {
+        showSlide(index);
+        startAutoPlay();
+      });
+    });
+
+    // Pause on hover
+    const carouselContainer = document.querySelector('.carousel-container');
+    carouselContainer.addEventListener('mouseenter', stopAutoPlay);
+    carouselContainer.addEventListener('mouseleave', startAutoPlay);
+
+    // Start auto-play
+    startAutoPlay();
+
+    // Smooth scroll untuk tombol "BELANJA SEKARANG"
+    const scrollButtons = document.querySelectorAll('.scroll-to-products');
+    scrollButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetSection = document.getElementById('products-section');
+        if (targetSection) {
+          const offsetTop = targetSection.offsetTop - 80;
+          window.scrollTo({
+            top: offsetTop,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+
+    // Mobile sidebar toggle
+    const toggleBtn = document.getElementById('mobileSidebarToggle');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    const closeBtn = document.getElementById('closeMobileSidebar');
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        overlay.classList.remove('hidden');
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        overlay.classList.add('hidden');
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+          overlay.classList.add('hidden');
+        }
+      });
+    }
+  });
+</script>
+
+{% endblock content %}

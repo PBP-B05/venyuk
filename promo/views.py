@@ -1,22 +1,68 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404, JsonResponse
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils import timezone
 from .models import Promo
 from .forms import PromoForm
 from functools import wraps 
 
-def superuser_required(view_func):
-    """
-    Decorator untuk membatasi akses view hanya untuk superuser.
-    """
+
+def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_superuser:
+        if not request.user.is_authenticated or not request.user.is_staff:
             return redirect('promo:promo_list') 
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+
+
+def validate_promo(request):
+
+    if request.method == "POST":
+        code = request.POST.get("promo_code", "").strip()
+        promo_type = request.POST.get("promo_type", "").strip().lower()
+        now = timezone.now().date()
+
+        if not code:
+            return JsonResponse({"valid": False, "message": "Kode promo belum diisi."})
+
+        try:
+            promo = Promo.objects.get(code__iexact=code)
+        except Promo.DoesNotExist:
+            return JsonResponse({
+                "valid": False,
+                "message": "Kode promo tidak ditemukan."
+            })
+
+        if promo_type == "venue" and not promo.code.upper().startswith("VENUE"):
+            return JsonResponse({
+                "valid": False,
+                "message": "Kode promo ini hanya berlaku untuk Venue."
+            })
+        elif promo_type == "shop" and not promo.code.upper().startswith("SHOP"):
+            return JsonResponse({
+                "valid": False,
+                "message": "Kode promo ini hanya berlaku untuk Shop."
+            })
+
+        if not promo.is_active or promo.end_date < now:
+            return JsonResponse({
+                "valid": False,
+                "message": "Kode promo sudah tidak berlaku."
+            })
+
+        return JsonResponse({
+            "valid": True,
+            "amount_discount": promo.amount_discount,
+            "message": f"Promo {promo.code} berlaku! Diskon {promo.amount_discount}%."
+        })
+
+    return JsonResponse({
+        "valid": False,
+        "message": "Metode request tidak valid."
+    })
 
 
 def promo_list_view(request):
@@ -50,7 +96,7 @@ def promo_detail_view(request, code):
     return render(request, 'promo/promo_detail.html', context)
 
 
-@superuser_required
+@admin_required
 def promo_create_view(request):
     """
     Menampilkan dan memproses form untuk membuat promo baru.
@@ -70,6 +116,7 @@ def promo_create_view(request):
     }
     return render(request, 'promo/promo_form.html', context)
 
+@admin_required
 def promo_update_view(request, code):
     """
     Menampilkan dan memproses form untuk mengedit promo yang ada.
@@ -92,13 +139,8 @@ def promo_update_view(request, code):
     }
     return render(request, 'promo/promo_form.html', context)
 
-
+@admin_required
 def promo_delete_view(request, code):
-    """
-    Memproses permintaan penghapusan promo.
-    Hanya merespon POST untuk keamanan.
-    Hanya untuk superuser.
-    """
     promo_instance = get_object_or_404(Promo, code=code)
 
     if request.method == 'POST':
@@ -107,12 +149,7 @@ def promo_delete_view(request, code):
     
     return redirect('promo:promo_detail', code=code)
 
-# --- 6. JSON RESPONSE VIEW (PERBAIKAN BUG) ---
 def get_promos_json_view(request):
-    """
-    Mengembalikan daftar promo dalam format JSON untuk AJAX.
-    Mendukung filter berdasarkan query parameter 'category'.
-    """
     category_filter = request.GET.get('category')
     today = timezone.localdate() 
 

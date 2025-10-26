@@ -26,7 +26,7 @@
       class="mb-8 flex flex-col items-center justify-between gap-4 md:flex-row"
     >
       <h2 class="text-3xl font-bold text-gray-900">Promo Aktif</h2>
-      {% if user.is_superuser %}
+      {% if user.is_staff %}
       <a
         href="{% url 'promo:promo_create' %}"
         class="flex items-center gap-2 rounded-lg bg-red-700 px-5 py-3 text-sm font-semibold text-white shadow-md transition-colors duration-200 hover:bg-red-800"
@@ -120,9 +120,6 @@
 </div>
 
 
-<!-- =================================================================== -->
-<!-- SCRIPT AJAX UNTUK FILTER                                            -->
-<!-- =================================================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const filterButtonsContainer = document.getElementById('filter-buttons');
@@ -133,12 +130,7 @@
     // URL untuk endpoint JSON kita
     const jsonApiUrl = "{% url 'promo:get_promos_json' %}";
     
-    // --- PERBAIKAN SYNTAX ERROR ---
-    // Cara ini lebih aman. Ini akan render menjadi:
-    // const isSuperuser = 'true' == 'true'; (valid)
-    // const isSuperuser = 'false' == 'true'; (valid)
-    // const isSuperuser = '' == 'true'; (valid, jika template tag gagal)
-    const isSuperuser = '{{ user.is_superuser|yesno:"true,false" }}' == 'true';
+    const isStaff = '{{ user.is_staff|yesno:"true,false" }}' == 'true';
     const csrfToken = "{{ csrf_token }}"; // Untuk form delete
 
     // --- PERUBAHAN: Panggil fetchPromos('ALL') saat halaman dimuat ---
@@ -207,13 +199,8 @@
       }
 
       promos.forEach(promo => {
-        // PERBAIKAN: HTML di bawah ini sekarang SAMA PERSIS dengan
-        // HTML di 'promo_card.html' Anda.
-        // Ini memperbaiki bug desain yang tidak konsisten.
-        
-        // Buat HTML untuk tombol superuser (jika superuser)
         let adminButtonsHtml = '';
-        if (isSuperuser) {
+        if (isStaff) {
           adminButtonsHtml = `
             <div class="mt-4 flex gap-3">
               <a href="${promo.url_update}" class="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">

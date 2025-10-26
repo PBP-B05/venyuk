@@ -8,6 +8,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 import datetime
 from django.views.decorators.csrf import csrf_exempt
+from .forms import UserEditForm, UserProfileEditForm
+from django.contrib import messages
 
 
 # ==============================================================
@@ -40,6 +42,16 @@ def register(request):
                         "message": "Registration successful!"
                     })
                 return redirect('authenticate:login')
+        else:
+            # ADD THIS PART 👇
+            errors = form.errors.as_json()
+            print("Registration errors:", errors)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Invalid form submission.",
+                    "errors": errors
+                }, status=400)
     else:
         form = UserCreationForm()
 
@@ -57,8 +69,22 @@ def login_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+
+        print("Received username:", username)
+        print("Received password:", password)
+
+        if not username or not password:
+            messages.error(request, "Please fill in both username and password.")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Please fill in both username and password."
+                }, status=400)
+            return render(request, 'authenticate/login.html')
+
         user = authenticate(request, username=username, password=password)
-        
+        print("Authenticate result:", user)
+
         if user is not None:
             login(request, user)
             response = HttpResponseRedirect(reverse("venue:home_section"))
@@ -116,3 +142,32 @@ def get_user_data(request):
     return JsonResponse({
         "is_authenticated": False
     })
+    
+@login_required 
+def profile(request):
+    return render(request, 'authenticate/profile.html')
+
+@login_required
+def profile_edit(request):
+    if request.method == 'POST':
+        u_form = UserEditForm(request.POST, instance=request.user)
+        p_form = UserProfileEditForm(request.POST, 
+                                     request.FILES, 
+                                     instance=request.user.userprofile)
+        
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
+            messages.success(request, 'Profil Anda berhasil diperbarui!')
+            return redirect('authenticate:profile') 
+
+    else:
+        u_form = UserEditForm(instance=request.user)
+        p_form = UserProfileEditForm(instance=request.user.userprofile)
+
+    context = {
+        'u_form': u_form,
+        'p_form': p_form
+    }
+
+    return render(request, 'authenticate/profile_edit.html', context)

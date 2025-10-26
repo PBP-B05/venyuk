@@ -29,7 +29,7 @@
             <a href="{% url 'promo:promo_detail' promo.code %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
                 Show Details
             </a>
-            {% if user.is_superuser %}
+            {% if user.is_staff %}
             <a href="{% url 'promo:promo_update' promo.code %}" class="block w-full text-center bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition duration-300 mt-2 text-sm">
                 Edit Promo
             </a>
