@@ -9,7 +9,7 @@
 {% include 'navbar.html' %}
 
 <!-- Hero Section -->
-<section class="relative h-[90vh] overflow-hidden">
+<section class="relative min-h-[80vh] md:h-[90vh] flex items-center overflow-hidden">
   <!-- Background image -->
   <div class="absolute inset-0 bg-cover bg-center" 
        style="background-image: url('{% static "images/landing_banner.png" %}');">
@@ -18,11 +18,11 @@
   <!-- Red overlay with gradient for readability -->
   <div class="absolute inset-0 bg-gradient-to-r from-[#1D1616]/90 via-[#8E1616]/80 to-[#D84040]/50"></div>
 
-  <!-- Content Grid -->
-  <div class="relative z-10 h-full grid grid-cols-1 md:grid-cols-5 items-center px-8 md:px-16">
-    
-    <!-- Text Section (3/5 width) -->
-    <div class="md:col-span-3 text-left text-[#EEEEEE] space-y-6">
+  <!-- Content Container -->
+  <div class="relative z-10 w-full grid grid-cols-1 md:grid-cols-5 items-center gap-8 px-6 md:px-16 py-12">
+
+    <!-- Text Section -->
+    <div class="md:col-span-3 text-left text-[#EEEEEE] space-y-6 order-2 md:order-1">
       <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]">
         Selamat Datang di 
         <span class="text-[#D84040]">VenYuk!</span>
@@ -36,14 +36,15 @@
       </a>
     </div>
 
-    <!-- Image Section (2/5 width) -->
-    <div class="hidden md:flex justify-center items-end md:col-span-2 relative z-20">
-    <img src="{% static 'images/ronaldo.png' %}" 
-        alt="Cristiano Ronaldo"
-        class="object-contain h-[85%] drop-shadow-2xl transition-transform duration-500 hover:scale-105" />
+    <!-- Image Section -->
+    <div class="flex justify-center items-end md:col-span-2 order-1 md:order-2">
+      <img src="{% static 'images/ronaldo.png' %}" 
+           alt="Cristiano Ronaldo"
+           class="object-contain max-h-[300px] md:max-h-[500px] drop-shadow-2xl transition-transform duration-500 hover:scale-105" />
     </div>
   </div>
 </section>
+
 
 <!-- SEWA LAPANGAN SECTION -->
 <section id="venue" class="py-16 bg-white">
@@ -52,12 +53,11 @@
     <div>
       <h2 class="text-3xl font-bold text-rose-700 mb-4">Sewa lapangan dengan mudah dan cepat.</h2>
       <p class="text-gray-700 text-lg mb-6">
-        Ada rencana berolahraga minggu ini tapi belum tahu mau main di mana? Atau tidak sempat jauh-jauh datang ke venue hanya untuk booking lapangan?
-        Yuk sewa venue!
+        Ada rencana berolahraga minggu ini tapi belum tahu mau main di mana? Atau tidak sempat jauh-jauh datang ke venue hanya untuk booking lapangan? Yuk sewa venue!
       </p>
       <a href="{% url 'venue:home_section' %}"
          class="inline-block bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-full transition">
-         Lihat Venue
+        Lihat Venue
       </a>
     </div>
 
@@ -83,10 +83,131 @@
     <div>
       <h2 class="text-3xl font-bold text-rose-700 mb-4 text-center">Tentang VenYuk!</h2>
       <p class="text-gray-700 text-lg leading-relaxed mb-6 text-center">
-        Venyuk merupakan aplikasi berbasis web untuk melakukan berbagai hal yang berkaitan dengan olahraga, seperti sewa venue, sewa alat olahraga, beli alat olahraga, blog, bahkan bisa mencari teman buat olahraga bareng. <br>
+        Venyuk merupakan aplikasi berbasis web untuk melakukan berbagai hal yang berkaitan dengan olahraga,
+        seperti sewa venue, sewa alat olahraga, beli alat olahraga, blog, bahkan bisa mencari teman buat olahraga bareng.
+        <br>
         Aplikasi ini dibuat oleh tim PBB B05 dengan 6 anggota, yaitu, Andi, Ello, Bintoro, Rasyad, Clairine, dan Zaka.
       </p>
     </div>
   </div>
 </section>
 {% endblock content %}
+
+<!-- Navbar (navbar.html) -->
+{% load static %}
+<nav class="navbar">
+  <a href="/" class="logo">
+    <img src="{% static 'images/logo_venyuk.png' %}" alt="Logo Venyuk">
+  </a>
+  <ul class="nav-links">
+    <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
+    <li><a href="#promo">Promo</a></li>
+    <li><a href="#ven-shop">Ven-Shop</a></li>
+    <li><a href="#main-bareng">Main Bareng</a></li>
+    <li><a href="#versus">Versus</a></li>
+    <li><a href="#blog">Blog</a></li>
+  </ul>
+
+  {% if user.is_authenticated %}
+  <div class="profile-container">
+    <div class="profile-info" id="profile-toggle">
+      <img src="{% static 'images/profile_icon.png' %}" alt="Profile" class="profile-icon">
+      <span class="nickname">{{ user.username }}</span>
+    </div>
+    <div class="dropdown-menu hidden" id="dropdown-menu">
+      <a href="{% url 'authenticate:login' %}">👤 Profile</a>
+      <a href="{% url 'authenticate:login' %}">📊 Dashboard</a>
+      <a href="{% url 'authenticate:logout' %}">🚪 Logout</a>
+    </div>
+  </div>
+  {% else %}
+  <a href="{% url 'authenticate:login' %}" class="btn-masuk">MASUK</a>
+  {% endif %}
+
+  <div class="hamburger">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</nav>
+
+<!-- Navbar JS -->
+<script>
+  const hamburger = document.querySelector(".hamburger");
+  const navLinks = document.querySelector(".nav-links");
+  hamburger.addEventListener("click", () => {
+    navLinks.classList.toggle("active");
+  });
+
+  const profileToggle = document.getElementById('profile-toggle');
+  const dropdownMenu = document.getElementById('dropdown-menu');
+  profileToggle?.addEventListener('click', () => {
+    dropdownMenu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!profileToggle?.contains(event.target) && !dropdownMenu?.contains(event.target)) {
+      dropdownMenu?.classList.add('hidden');
+    }
+  });
+</script>
+
+<!-- Navbar CSS -->
+<style>
+  .navbar {
+    background-color: white;
+    padding: 1rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+  .logo { display: flex; align-items: center; height: 50px; }
+  .logo img { height: 100%; width: auto; object-fit: contain; }
+  .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; margin: 0; padding: 0; }
+  .nav-links a { text-decoration: none; color: #666; transition: color 0.3s; }
+  .nav-links a:hover { color: #c84b4b; }
+  .btn-masuk { background-color: #c84b4b; color: white; padding: 0.7rem 2rem; border-radius: 8px; text-decoration: none; transition: background-color 0.3s; white-space: nowrap; }
+  .btn-masuk:hover { background-color: #a83d3d; }
+  .hamburger { display: none; cursor: pointer; flex-direction: column; gap: 4px; }
+  .hamburger span { display: block; width: 25px; height: 3px; background-color: #333; border-radius: 2px; transition: all 0.3s ease; }
+  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(7px,-6px); }
+
+  /* Media Queries */
+  @media (max-width: 768px) {
+    .nav-links { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: white; box-shadow: 0 4px 5px rgba(0,0,0,0.1); padding: 1rem 0; gap: 1.5rem; z-index: 999; }
+    .nav-links.active { display: flex; }
+    .nav-links li { width: 100%; text-align: center; }
+    .btn-masuk { padding: 0.5rem 1.5rem; font-size: 0.9rem; }
+    .hamburger { display: flex; }
+    .logo { height: 40px; }
+  }
+
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .nav-links { gap: 1.5rem; }
+    .nav-links a { font-size: 0.9rem; }
+  }
+
+  /* Profile Container */
+  .profile-container { position: relative; display: flex; align-items: center; cursor: pointer; }
+  .profile-info { display: flex; align-items: center; gap: 8px; }
+  .profile-icon { width: 40px; height: 40px; border-radius: 50%; background-color: #1976D2; object-fit: cover; }
+  .nickname { font-weight: 600; color: #333; }
+
+  /* Dropdown Menu */
+  .dropdown-menu { position: absolute; top: 110%; right: 0; background: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: flex; flex-direction: column; min-width: 160px; overflow: hidden; z-index: 999; animation: fadeIn 0.25s ease-in-out; }
+  .dropdown-menu a { padding: 10px 16px; text-decoration: none; color: #333; font-weight: 500; transition: background 0.2s; }
+  .dropdown-menu a:hover { background-color: #f5f5f5; color: #c84b4b; }
+  .hidden { display: none; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

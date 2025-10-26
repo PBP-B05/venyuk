@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Form Promo" }}{% endblock title %}
+
+{% block content %}
+<!-- Include Navbar Anda -->
+{% include "navbar.html" %}
+
+<div class="min-h-screen bg-gray-100 py-12">
+    <div class="container mx-auto px-4">
+        
+        <!-- Kontainer Form -->
+        <div class="max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-2xl">
+            
+            <!-- Judul Form -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                {{ page_title }}
+            </h1>
+
+            <!-- Form -->
+            <!-- 
+                enctype="multipart/form-data" sangat PENTING 
+                karena Anda meng-upload gambar (thumbnail).
+            -->
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- 
+                  Looping otomatis field dari form.py
+                  Ini akan merender semua field, termasuk yang kita buat di forms.py
+                -->
+                {{ form.as_p }}
+                
+                <!-- 
+                  Jika Anda ingin styling manual per field (lebih rumit tapi lebih rapi):
+                  
+                  <div classC="space-y-6">
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Judul Promo</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<p class="text-red-500 text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.thumbnail.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Thumbnail</label>
+                        {{ form.thumbnail }}
+                        {% if form.thumbnail.errors %}<p class="text-red-500 text-xs mt-1">{{ form.thumbnail.errors.0 }}</p>{% endif %}
+                    </div>
+                    
+                    ... (dan seterusnya untuk semua field) ...
+                  </div>
+                -->
+                
+                <!-- Tombol Submit -->
+                <div class="pt-6">
+                    <button type="submit" class="w-full bg-red-700 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-red-800 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Simpan Promo
+                    </button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<!-- 
+  Script untuk memformat input <p> yang di-generate oleh form.as_p 
+  agar sesuai dengan styling Tailwind
+-->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            // Target semua <p> di dalam form (hasil dari form.as_p)
+            form.querySelectorAll('p').forEach(function(p) {
+                p.classList.add('flex', 'flex-col', 'space-y-1');
+
+                const label = p.querySelector('label');
+                if (label) {
+                    label.classList.add('text-sm', 'font-medium', 'text-gray-700');
+                }
+
+                const input = p.querySelector('input, select, textarea');
+                if (input) {
+                    // Kecualikan checkbox dan file input dari styling ini
+                    if (input.type !== 'checkbox' && input.type !== 'file') {
+                        input.classList.add('w-full', 'px-3', 'py-2', 'border', 'border-gray-300', 'rounded-lg', 'shadow-sm', 'focus:outline-none', 'focus:ring-red-500', 'focus:border-red-500');
+                    }
+                    if (input.type === 'file') {
+                         input.classList.add('w-full', 'text-sm', 'text-gray-500',
+                            'file:mr-4', 'file:py-2', 'file:px-4',
+                            'file:rounded-lg', 'file:border-0',
+                            'file:text-sm', 'file:font-semibold',
+                            'file:bg-red-50', 'file:text-red-700',
+                            'hover:file:bg-red-100'
+                         );
+                    }
+                    if (input.type === 'checkbox') {
+                        // Perlu wrapper untuk styling checkbox yang baik
+                        p.classList.remove('flex-col', 'space-y-1');
+                        p.classList.add('flex-row', 'items-center', 'space-x-2');
+                        input.classList.add('h-4', 'w-4', 'text-red-600', 'border-gray-300', 'rounded', 'focus:ring-red-500');
+                        // Tukar posisi label dan input
+                        p.appendChild(label);
+                    }
+                }
+                
+                const helpText = p.querySelector('.helptext');
+                if (helpText) {
+                    helpText.classList.add('text-xs', 'text-gray-500', 'mt-1');
+                }
+            });
+        }
+    });
+</script>
+{% endblock content %}
+
