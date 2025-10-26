@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>Edit Profil - VenYuk!</title>
+{% endblock meta %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<style>
+    /* Form styling */
+    form input, form select, form textarea {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #cbd5e1; /* slate-300 */
+        border-radius: 0.5rem; /* rounded-lg */
+        font-size: 1rem;
+        color: #1e293b; /* slate-800 */
+        background-color: #ffffff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    form input:focus, form select:focus, form textarea:focus {
+        outline: none;
+        border-color: #f43f5e; /* rose-500 */
+        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2); /* rose-200 */
+    }
+
+    form label {
+        display: block;
+        font-weight: 500;
+        color: #1e293b; /* slate-800 */
+        margin-bottom: 0.25rem;
+    }
+
+    form .errorlist {
+        color: #dc2626; /* red-600 */
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+        list-style: none;
+        padding-left: 0;
+    }
+
+    /* File input styling */
+    input[type="file"] {
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Button hover transition */
+    button:hover {
+        cursor: pointer;
+    }
+</style>
+
+<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
+    <div class="max-w-2xl mx-auto px-6 py-12">
+        
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Edit Profil</h1>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" 
+              class="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 space-y-6">
+            
+            {% csrf_token %}
+
+            <!-- Info Akun -->
+            <div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Info Akun</h3>
+                {{ u_form.as_p }} 
+            </div>
+
+            <!-- Foto Profil -->
+            <div>
+                {% if user.profile.image %}
+                    <img src="{{ user.profile.image.url }}" alt="Foto Profil" class="w-16 h-16 rounded-full object-cover border mb-2">
+                {% endif %}
+                {{ p_form.as_p }}
+            </div>
+
+            <!-- Buttons -->
+            <div class="pt-4 flex justify-end">
+                <a href="{% url 'authenticate:profile' %}" class="inline-block px-5 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-semibold mr-3">
+                    Batal
+                </a>
+                <button type="submit" 
+                   class="inline-block px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition font-semibold">
+                    Simpan Perubahan
+                </button>
+            </div>
+            
+        </form>
+    </div>
+</div>
+
+{% endblock content %}

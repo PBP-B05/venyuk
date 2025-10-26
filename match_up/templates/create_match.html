@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+    {% include "navbar.html" %}
+
+    <div class="pt-20 pb-20 min-h-screen" style="background-image: url('{% static 'images/register_bg.png' %}'); background-size: cover; background-position: center;">
+    
+        <div class="container mx-auto max-w-lg">
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <h1 class="text-2xl font-bold mb-6">Make Match</h1>
+                
+                <form method="POST" id="create-match-form" novalidate>
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        
+                        <div>
+                            <label for="{{ form.venue.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.venue.label }}</label>
+                            
+                            {{ form.venue }}
+                            
+                            {% if form.venue.errors %}<p class="text-red-500 text-xs mt-1">{{ form.venue.errors.0 }}</p>{% endif %}
+                            <div id="id_venue-error" class="text-red-500 text-xs mt-1"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="{{ form.slot_total.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.slot_total.label }}</label>
+                                {{ form.slot_total }}
+                                {% if form.slot_total.errors %}<p class="text-red-500 text-xs mt-1">{{ form.slot_total.errors.0 }}</p>{% endif %}
+                                <div id="id_slot_total-error" class="text-red-500 text-xs mt-1"></div>
+                            </div>
+                            <div>
+                                <label for="{{ form.slot_terisi.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.slot_terisi.label }}</label>
+                                {{ form.slot_terisi }}
+                                {% if form.slot_terisi.errors %}<p class="text-red-500 text-xs mt-1">{{ form.slot_terisi.errors.0 }}</p>{% endif %}
+                                <div id="id_slot_terisi-error" class="text-red-500 text-xs mt-1"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.start_time.label }}</label>
+                            {{ form.start_time }}
+                            {% if form.start_time.errors %}<p class="text-red-500 text-xs mt-1">{{ form.start_time.errors.0 }}</p>{% endif %}
+                            <div id="id_start_time-error" class="text-red-500 text-xs mt-1"></div>
+                        </div>
+
+                        <div>
+                            <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.end_time.label }}</label>
+                            {{ form.end_time }}
+                            {% if form.end_time.errors %}<p class="text-red-500 text-xs mt-1">{{ form.end_time.errors.0 }}</p>{% endif %}
+                            <div id="id_end_time-error" class="text-red-500 text-xs mt-1"></div>
+                        </div>
+
+                        <div>
+                            <label for="{{ form.difficulty_level.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.difficulty_level.label }}</label>
+                            {{ form.difficulty_level }}
+                            {% if form.difficulty_level.errors %}<p class="text-red-500 text-xs mt-1">{{ form.difficulty_level.errors.0 }}</p>{% endif %}
+                            <div id="id_difficulty_level-error" class="text-red-500 text-xs mt-1"></div>
+                        </div>
+
+                    </div>
+
+                    <div id="form-message" class="hidden mt-4 p-4 rounded-md text-white"></div>
+
+                    <button type="submit" id="submit-button" class="mt-6 w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                        Submit
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+
+    {# Script AJAX #}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('create-match-form');
+            const messageDiv = document.getElementById('form-message');
+            const submitButton = document.getElementById('submit-button');
+            const errorDivs = document.querySelectorAll('div[id$="-error"]');
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                messageDiv.textContent = '';
+                messageDiv.className = 'hidden mt-4 p-4 rounded-md text-white';
+                errorDivs.forEach(div => div.textContent = '');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+
+                const formData = new FormData(form);
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        messageDiv.textContent = data.message;
+                        messageDiv.className = 'block mt-4 p-4 rounded-md text-white bg-green-500';
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 2000);
+                    } else if (data.status === 'error') {
+                        messageDiv.textContent = data.message;
+                        messageDiv.className = 'block mt-4 p-4 rounded-md text-white bg-red-500';
+                        if (data.errors) {
+                            for (const [field, errors] of Object.entries(data.errors)) {
+                                const errorDiv = document.getElementById(`id_${field}-error`);
+                                if (errorDiv) {
+                                    errorDiv.textContent = errors[0].message;
+                                }
+                            }
+                        }
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Submit';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch Error:', error);
+                    messageDiv.textContent = 'An unexpected error occurred. Please try again.';
+                    messageDiv.className = 'block mt-4 p-4 rounded-md text-white bg-red-500';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit';
+                });
+            });
+        });
+    </script>
+
+{% endblock %}

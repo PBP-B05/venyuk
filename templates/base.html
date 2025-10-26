@@ -17,37 +17,25 @@
     <div id="toastContent" class="bg-gray-800 text-white px-5 py-3 rounded-lg shadow-lg"></div>
   </div>
 
-<script>
-  function showToast(message, success=true) {
-    const toast = document.getElementById('toast');
-    const toastContent = document.getElementById('toastContent');
-    toastContent.textContent = message;
-    toastContent.className = success 
-      ? "bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg"
-      : "bg-red-600 text-white px-5 py-3 rounded-lg shadow-lg";
+  <script>
+    function showToast(message, success=true) {
+      const toast = document.getElementById('toast');
+      const toastContent = document.getElementById('toastContent');
+      toastContent.textContent = message;
+      toastContent.className = success 
+        ? "bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg"
+        : "bg-red-600 text-white px-5 py-3 rounded-lg shadow-lg";
 
-    toast.classList.remove('hidden');
-    setTimeout(() => { toast.classList.add('hidden'); }, 3000);
-  }
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+    }
 
-  // Modal control
-  document.getElementById("closeLoginModal").onclick = () => {
-    document.getElementById("loginModal").classList.add("hidden");
-  };
-  document.getElementById("openLoginModal")?.addEventListener("click", () => {
-    document.getElementById("loginModal").classList.remove("hidden");
-  });
-
-  // AJAX login
-  document.getElementById("loginForm")?.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    const response = await fetch("{% url 'authenticate:login' %}", {
-      method: "POST",
-      headers: { "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest" },
-      body: formData
+    // Modal control
+    document.getElementById("closeLoginModal")?.addEventListener("click", () => {
+      document.getElementById("loginModal")?.classList.add("hidden");
+    });
+    document.getElementById("openLoginModal")?.addEventListener("click", () => {
+      document.getElementById("loginModal")?.classList.remove("hidden");
     });
 
     const data = await response.json();

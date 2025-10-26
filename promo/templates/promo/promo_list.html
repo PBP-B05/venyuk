@@ -1,67 +1,273 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Promo Venue & Shop{% endblock title %}
+{% block title %}Daftar Promo{% endblock title %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100">
+<div class="w-full bg-white pt-20">
+  {% include "navbar.html" %}
+  <div
+    class="relative flex h-60 items-center justify-center overflow-hidden bg-gray-900 text-center text-white"
+  >
+    <div
+      class="absolute inset-0 bg-gradient-to-r from-red-800 via-gray-900 to-black"
+    ></div>
+    <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+    <div class="relative z-10 p-4">
+      <h1 class="text-4xl font-extrabold md:text-6xl">Promo Spesial</h1>
+      <p class="mt-4 max-w-2xl text-lg text-gray-300">
+        Temukan diskon terbaik untuk venue dan perlengkapan shop kami.
+      </p>
+    </div>
+  </div>
+
+  <div class="container mx-auto max-w-7xl px-4 py-12">
+    <div
+      class="mb-8 flex flex-col items-center justify-between gap-4 md:flex-row"
+    >
+      <h2 class="text-3xl font-bold text-gray-900">Promo Aktif</h2>
+      {% if user.is_staff %}
+      <a
+        href="{% url 'promo:promo_create' %}"
+        class="flex items-center gap-2 rounded-lg bg-red-700 px-5 py-3 text-sm font-semibold text-white shadow-md transition-colors duration-200 hover:bg-red-800"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          class="h-5 w-5"
+        >
+          <path
+            d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"
+          />
+        </svg>
+        Buat Promo Baru
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Tombol Filter -->
+    <div
+      class="mb-8 flex flex-wrap items-center justify-center gap-2 rounded-lg bg-gray-100 p-2 md:gap-4"
+      id="filter-buttons"
+    >
+      <button
+        data-category="ALL"
+        class="filter-btn rounded-md px-4 py-2 text-sm font-medium md:px-6 md:text-base {% if selected_category == 'ALL' %}bg-red-700 text-white shadow-md{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}"
+      >
+        Semua
+      </button>
+      <button
+        data-category="SHOP"
+        class="filter-btn rounded-md px-4 py-2 text-sm font-medium md:px-6 md:text-base {% if selected_category == 'SHOP' %}bg-red-700 text-white shadow-md{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}"
+      >
+        Shop
+      </button>
+      <button
+        data-category="VENUE"
+        class="filter-btn rounded-md px-4 py-2 text-sm font-medium md:px-6 md:text-base {% if selected_category == 'VENUE' %}bg-red-700 text-white shadow-md{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}"
+      >
+        Venue
+      </button>
+    </div>
+
+    <!-- Loading Spinner (untuk AJAX) -->
+    <!-- PERUBAHAN: Spinner akan tampil di awal, lalu disembunyikan oleh JS -->
+    <div id="loading-spinner" class="text-center">
+      <svg
+        class="mx-auto h-12 w-12 animate-spin text-red-700"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      <p class="mt-2 text-gray-600">Memuat promo...</p>
+    </div>
+
+
+    <div
+      id="promo-grid"
+      class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      <!-- Konten diisi oleh JavaScript -->
+    </div>
     
-    <!-- Include Navbar Anda -->
-    {% include "navbar.html" %}
-
-    <!-- Bagian Banner Utama -->
-    <header class="relative bg-gray-900 text-white py-20 md:py-32">
-        <!-- Background Overlay (mirip desain) -->
-        <div class="absolute inset-0 bg-gradient-to-r from-red-800 via-gray-900 to-black opacity-80"></div>
-        
-        <!-- Placeholder untuk siluet (jika Anda ingin menambahkannya nanti) -->
-        <!-- <div class="absolute inset-0 bg-[url('path/to/silhouettes.png')] bg-cover bg-center opacity-20"></div> -->
-
-        <div class="container mx-auto px-6 relative z-10 text-center">
-            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
-                SEWA VENUE OLAHRAGA
-            </h1>
-            <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight text-red-400">
-                DISKON 30%
-            </h2>
-        </div>
-    </header>
-
-    <!-- Konten Utama -->
-    <main class="container mx-auto px-4 md:px-8 py-12">
-        
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold text-gray-800">Promo Aktif</h2>
-            
-            <!-- Tombol Buat Promo (Hanya untuk user login) -->
-            {% if user.is_authenticated %}
-            <a href="{% url 'promo:promo-create' %}" class="bg-red-700 text-white py-2 px-5 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
-                + Buat Promo
-            </a>
-            {% endif %}
-        </div>
-
-        <!-- Grid untuk Kartu Promo -->
-        {% if promos %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                <!-- Loop untuk setiap promo -->
-                {% for promo in promos %}
-                    {% include "promo/promo_card.html" with promo=promo %}
-                {% endfor %}
-
+    <!-- Template untuk pesan "Tidak ada promo" (untuk AJAX) -->
+    <div id="no-promo-template" class="hidden">
+        <div class="col-span-full">
+            <div class="mx-auto max-w-lg rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10l4 4m0-4l-4 4"></path></svg>
+                <h3 class="mt-2 text-2xl font-semibold text-red-800">Oops! Belum Ada Promo</h3>
+                <p class="mt-1 text-base text-red-700">Belum ada promo yang tersedia untuk kategori ini.</p>
             </div>
-        {% else %}
-            <!-- Pesan jika tidak ada promo -->
-            <div class="text-center bg-white p-12 rounded-lg shadow-md">
-                <h3 class="text-2xl font-semibold text-gray-700">Belum Ada Promo</h3>
-                <p class="text-gray-500 mt-2">Saat ini belum ada promo yang aktif. Cek kembali nanti!</p>
-            </div>
-        {% endif %}
+        </div>
+    </div>
 
-        <!-- TODO: Tambahkan Navigasi Paginasi di sini jika diperlukan -->
-
-    </main>
+  </div>
 </div>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const filterButtonsContainer = document.getElementById('filter-buttons');
+    const promoGrid = document.getElementById('promo-grid');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const noPromoTemplate = document.getElementById('no-promo-template');
+    
+    // URL untuk endpoint JSON kita
+    const jsonApiUrl = "{% url 'promo:get_promos_json' %}";
+    
+    const isStaff = '{{ user.is_staff|yesno:"true,false" }}' == 'true';
+    const csrfToken = "{{ csrf_token }}"; // Untuk form delete
+
+    // --- PERUBAHAN: Panggil fetchPromos('ALL') saat halaman dimuat ---
+    // Ini adalah implementasi dari saran Anda untuk tidak menggunakan promo_card.html
+    fetchPromos('ALL');
+
+    filterButtonsContainer.addEventListener('click', function (e) {
+      // Hanya jalankan jika yang diklik adalah tombol, bukan area di sekitarnya
+      if (e.target.classList.contains('filter-btn')) {
+        const category = e.target.getAttribute('data-category');
+        updateActiveButton(e.target);
+        fetchPromos(category);
+      }
+    });
+
+    function updateActiveButton(activeButton) {
+      // Hapus status aktif dari semua tombol
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-red-700', 'text-white', 'shadow-md');
+        btn.classList.add('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+      });
+      // Tambahkan status aktif ke tombol yang diklik
+      activeButton.classList.add('bg-red-700', 'text-white', 'shadow-md');
+      activeButton.classList.remove('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+    }
+
+    async function fetchPromos(category) {
+      // Hapus pesan "tidak ada promo" dari Django (jika ada)
+      const djangoNoPromo = document.getElementById('no-promo-message-django');
+      if (djangoNoPromo) {
+        djangoNoPromo.remove();
+      }
+      
+      loadingSpinner.classList.remove('hidden'); // Tampilkan spinner
+      promoGrid.innerHTML = ''; // Kosongkan grid
+      
+      let url = jsonApiUrl;
+      if (category !== 'ALL') {
+        url += `?category=${category}`;
+      }
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        
+        loadingSpinner.classList.add('hidden'); // Sembunyikan spinner
+        renderCards(data.promos);
+        
+      } catch (error) {
+        console.error('Error fetching promos:', error);
+        loadingSpinner.classList.add('hidden');
+        promoGrid.innerHTML = '<p class="col-span-full text-center text-lg text-red-500">Gagal memuat promo. Silakan coba lagi.</p>';
+      }
+    }
+
+    function renderCards(promos) {
+      promoGrid.innerHTML = ''; // Pastikan grid kosong
+      
+      if (promos.length === 0) {
+        // Jika tidak ada promo, tampilkan dari template
+        promoGrid.innerHTML = noPromoTemplate.innerHTML;
+        return;
+      }
+
+      promos.forEach(promo => {
+        let adminButtonsHtml = '';
+        if (isStaff) {
+          adminButtonsHtml = `
+            <div class="mt-4 flex gap-3">
+              <a href="${promo.url_update}" class="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                Edit
+              </a>
+              <!-- Form untuk Delete -->
+              <form action="${promo.url_delete}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus promo ini?');">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                <button type="submit" class="w-full rounded-md bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                  Delete
+                </button>
+              </form>
+            </div>
+          `;
+        }
+        
+        // --- PERBAIKAN ERROR DIMULAI DI SINI ---
+        // Kita format tanggal yang diterima dari JSON (misal: "2025-10-26T...Z")
+        // menggunakan JavaScript, karena 'start_date_formatted' tidak ada.
+        const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+        const shortDateOptions = { day: '2-digit', month: 'short' };
+        
+        // Buat objek Date. JSON mengirim tanggal sebagai string ISO (UTC)
+        const startDate = new Date(promo.start_date).toLocaleDateString("id-ID", shortDateOptions);
+        const endDate = new Date(promo.end_date).toLocaleDateString("id-ID", dateOptions);
+        // --- PERBAIKAN ERROR SELESAI ---
+
+        
+        const cardHtml = `
+          <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl">
+    
+            <div class="relative h-56 w-full">
+              <div class="absolute inset-0 bg-gradient-to-r from-red-800 via-gray-900 to-black"></div>
+              <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+              <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-white text-center">
+                <h3 class="font-bold text-xl uppercase max-w-xs truncate" title="${promo.title}">${promo.title}</h3>
+                <h2 class="font-extrabold text-4xl md:text-5xl mt-1">DISKON ${promo.amount_discount}%</h2>
+              </div>
+            </div>
+
+            <div class="p-6 flex-grow flex flex-col">
+              <span class="text-red-600 font-bold text-sm">${promo.amount_discount}% OFF</span>
+              <h4 class="text-lg font-bold text-gray-900 mt-1 truncate" title="${promo.title}">
+                ${promo.title}
+              </h4>      
+              <p class="text-sm text-gray-600 mt-1 flex-grow truncate" title="${promo.description}">
+                ${promo.description}
+              </p>
+              <p class="text-xs text-gray-500 mt-3 font-medium">
+                <!-- Gunakan variabel tanggal yang sudah diformat -->
+                ${startDate} - ${endDate}
+              </p>
+
+              <div class="mt-6">
+                <a href="${promo.url_detail}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
+                  Show Details
+                </a>
+                ${adminButtonsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+        promoGrid.innerHTML += cardHtml;
+      });
+    }
+
+  });
+</script>
 {% endblock content %}
 
