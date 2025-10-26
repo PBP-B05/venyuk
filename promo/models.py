@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 import uuid
-# from django.contrib.auth.models import User # Import User jika Anda ingin melacak siapa yang membuat promo
+
 
 class Promo(models.Model):
     """
@@ -68,3 +68,23 @@ class Promo(models.Model):
         
         super().save(*args, **kwargs)
 
+    def to_dict(self):
+        """
+        Mengubah objek Promo menjadi dictionary Python.
+        Berguna untuk serialisasi JSON.
+        
+        --- PERBAIKAN BUG FILTER ---
+        """
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'amount_discount': self.amount_discount,
+            'category': self.category,
+            'category_display': self.get_category_display(),
+            'max_uses': self.max_uses,
+            'start_date': self.start_date.isoformat(),
+            'end_date': self.end_date.isoformat(),
+            'is_active': self.is_active,
+            'code': self.code,
+        }
