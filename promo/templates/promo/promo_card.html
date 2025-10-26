@@ -6,22 +6,21 @@
     
     <!-- Bagian Atas (Gambar & Overlay Teks) -->
     <div class="relative h-56 w-full">
-        <!-- Gambar Thumbnail -->
-        <img 
-            src="{% if promo.thumbnail %}{{ promo.thumbnail.url }}{% else %}https://placehold.co/600x400/333333/FFFFFF?text=Promo{% endif %}" 
-            alt="Thumbnail {{ promo.title }}" 
-            class="w-full h-full object-cover"
-            onerror="this.onerror=null;this.src='https://placehold.co/600x400/333333/FFFFFF?text=Promo';">
         
-        <!-- Overlay Gelap -->
-        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <!-- 
+          PERUBAHAN: 
+          Placeholder Background (Menggantikan <img>) 
+          Ini adalah div gradien gelap yang selaras dengan tema banner Anda.
+        -->
+        <div class="absolute inset-0 bg-gradient-to-r from-red-800 via-gray-900 to-black"></div>
+        
+        <!-- Overlay Gelap (opsional, tapi membuat teks lebih menonjol) -->
+        <div class="absolute inset-0 bg-black bg-opacity-30"></div>
 
-        <!-- Teks Overlay (Sesuai Desain) -->
+        <!-- Teks Overlay (Sesuai Desain Asli Anda) -->
         <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-white text-center">
-            <h3 class="font-bold text-xl uppercase max-w-xs truncate">{{ promo.title }}</h3>
+            <h3 class="font-bold text-xl uppercase max-w-xs truncate" title="{{ promo.title }}">{{ promo.title }}</h3>
             <h2 class="font-extrabold text-4xl md:text-5xl mt-1">DISKON {{ promo.amount_discount }}%</h2>
-            <!-- Anda bisa menambahkan tombol kecil di sini jika mau, seperti di gambar -->
-            <!-- <span class="mt-3 text-xs font-semibold border border-white px-3 py-1 rounded-full">LIHAT SEMUA PROMO</span> -->
         </div>
     </div>
 
@@ -35,7 +34,7 @@
             {{ promo.title }}
         </h4>
         
-        <!-- Deskripsi Singkat (dari gambar "First time book venue") -->
+        <!-- Deskripsi Singkat -->
         <p class="text-sm text-gray-600 mt-1 flex-grow truncate" title="{{ promo.description }}">
             {{ promo.description }}
         </p>
@@ -47,13 +46,13 @@
 
         <!-- Tombol Aksi (di bagian bawah) -->
         <div class="mt-6">
-            <a href="{% url 'promo:promo-detail' promo.pk %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
+            <a href="{% url 'promo:promo_detail' promo.code %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
                 Show Details
             </a>
 
             <!-- Tombol Edit (Hanya untuk user login) -->
             {% if user.is_authenticated %}
-            <a href="{% url 'promo:promo-update' promo.pk %}" class="block w-full text-center bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition duration-300 mt-2 text-sm">
+            <a href="{% url 'promo:promo_update' promo.code %}" class="block w-full text-center bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition duration-300 mt-2 text-sm">
                 Edit Promo
             </a>
             {% endif %}

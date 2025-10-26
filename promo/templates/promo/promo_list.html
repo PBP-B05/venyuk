@@ -5,24 +5,20 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-100">
-    
-    <!-- Include Navbar Anda -->
+
     {% include "navbar.html" %}
 
-    <!-- Bagian Banner Utama -->
+
     <header class="relative bg-gray-900 text-white py-20 md:py-32">
         <!-- Background Overlay (mirip desain) -->
         <div class="absolute inset-0 bg-gradient-to-r from-red-800 via-gray-900 to-black opacity-80"></div>
-        
-        <!-- Placeholder untuk siluet (jika Anda ingin menambahkannya nanti) -->
-        <!-- <div class="absolute inset-0 bg-[url('path/to/silhouettes.png')] bg-cover bg-center opacity-20"></div> -->
 
         <div class="container mx-auto px-6 relative z-10 text-center">
             <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
                 SEWA VENUE OLAHRAGA
             </h1>
             <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight text-red-400">
-                DISKON 30%
+                LEBIH HEMAT PAKE PROMO!
             </h2>
         </div>
     </header>
@@ -35,7 +31,7 @@
             
             <!-- Tombol Buat Promo (Hanya untuk user login) -->
             {% if user.is_authenticated %}
-            <a href="{% url 'promo:promo-create' %}" class="bg-red-700 text-white py-2 px-5 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
+            <a href="{% url 'promo:promo_create' %}" class="bg-red-700 text-white py-2 px-5 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
                 + Buat Promo
             </a>
             {% endif %}
@@ -52,14 +48,11 @@
 
             </div>
         {% else %}
-            <!-- Pesan jika tidak ada promo -->
             <div class="text-center bg-white p-12 rounded-lg shadow-md">
                 <h3 class="text-2xl font-semibold text-gray-700">Belum Ada Promo</h3>
                 <p class="text-gray-500 mt-2">Saat ini belum ada promo yang aktif. Cek kembali nanti!</p>
             </div>
         {% endif %}
-
-        <!-- TODO: Tambahkan Navigasi Paginasi di sini jika diperlukan -->
 
     </main>
 </div>

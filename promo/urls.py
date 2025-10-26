@@ -5,15 +5,9 @@ from . import views
 app_name = 'promo'
 
 urlpatterns = [
-    # cth: /promo/
-    path('', views.PromoListView.as_view(), name='promo-list'),
-    
-    # cth: /promo/buat/
-    path('create/', views.PromoCreateView.as_view(), name='promo-create'),
-    
-    # cth: /promo/detail/5/ (pk = 5)
-    path('detail/<int:pk>/', views.PromoDetailView.as_view(), name='promo-detail'),
-    
-    # cth: /promo/edit/5/ (pk = 5)
-    path('edit/<int:pk>/', views.PromoUpdateView.as_view(), name='promo-update'),
+    path('', views.PromoListView.as_view(), name='promo_list'),
+    path('create/', views.PromoCreateView.as_view(), name='promo_create'),
+    path('detail/<str:code>/', views.PromoDetailView.as_view(), name='promo_detail'),
+    path('edit/<str:code>/', views.PromoUpdateView.as_view(), name='promo_update'),
+    path('<str:code>/delete/', views.PromoDeleteView.as_view(), name='promo_delete'),
 ]
