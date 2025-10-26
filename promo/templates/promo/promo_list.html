@@ -33,8 +33,7 @@
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-bold text-gray-800">Promo Aktif</h2>
             
-            <!-- Tombol Buat Promo (Hanya untuk user login) -->
-            {% if user.is_authenticated %}
+            {% if user.is_staff %}
             <a href="{% url 'promo:promo-create' %}" class="bg-red-700 text-white py-2 px-5 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
                 + Buat Promo
             </a>

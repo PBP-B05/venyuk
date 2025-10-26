@@ -52,7 +52,7 @@
             </a>
 
             <!-- Tombol Edit (Hanya untuk user login) -->
-            {% if user.is_authenticated %}
+            {% if user.is_staff %}
             <a href="{% url 'promo:promo-update' promo.pk %}" class="block w-full text-center bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition duration-300 mt-2 text-sm">
                 Edit Promo
             </a>

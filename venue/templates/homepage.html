@@ -158,18 +158,35 @@
                     ⚠️ Waktu selesai harus setelah waktu mulai
                 </div>
                 
+                <div id="bookingMeta" data-price-per-hour="{{ venue.price }}" style="display:none"></div>
+
+                <div class="mb-3">
+                <label for="promo_code" class="block text-sm font-medium text-gray-700">Kode Promo</label>
+                <div class="flex mt-1">
+                    <input type="text" id="promo_code" name="promo_code"
+                        class="border rounded-l-md px-3 py-2 w-full"
+                        placeholder="Masukkan kode promo">
+                    <button type="button" id="apply_promo"
+                            class="bg-rose-600 text-white px-4 py-2 rounded-r-md hover:bg-rose-700">
+                    Terapkan
+                    </button>
+                </div>
+                <p id="promo_message" class="text-sm mt-2"></p>
+                </div>
+
                 <div id="priceSummary" class="bg-slate-50 rounded-lg p-4 hidden">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-slate-600">Durasi:</span>
                         <span id="duration" class="font-semibold text-slate-800">0 jam</span>
                     </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-sm text-slate-600">Total Harga:</span>
-                        <span id="estimatedPrice" class="font-semibold text-rose-600 text-lg">Rp 0</span>
+                    <div class="flex justify-between items-start mt-2"> <span class="text-sm text-slate-600 pt-1">Total Harga:</span>
+                        <div id="priceDisplay" class="text-right">
+                            <span class="font-semibold text-rose-600 text-lg">Rp 0</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
+                </div>
+                            
             <div class="flex gap-3 mt-6">
                 <button type="button" onclick="closeBookingModal()" 
                         class="flex-1 py-2 px-4 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition">
@@ -190,6 +207,7 @@ let currentVenuePrice = 0;
 let currentVenueId = '';
 let currentVenueName = '';
 let availableSlots = [];
+let currentDiscountPercent = 0;
 
 // Function untuk generate jam options dengan validasi
 function generateTimeOptions() {
@@ -364,33 +382,33 @@ function validateTime() {
     return false;
 }
 
-// Optimized Modal Functions
 function openBookingModal(venueId, venuePrice, venueName = '') {
     currentVenuePrice = venuePrice;
     currentVenueId = venueId;
     currentVenueName = venueName;
+    currentDiscountPercent = 0;
     $('#bookingVenueId').val(venueId);
     
-    // Reset form
     $('#bookingForm')[0].reset();
     $('#priceSummary').hide();
     $('#timeError').hide();
     $('#submitBookingBtn').prop('disabled', true).text('Booking Sekarang');
     
-    // Set minimum date to today
+    $('#promo_code').val('');
+    $('#promo_message').text('').removeClass('text-green-600 text-red-600');
+    
+    $('#priceDisplay').html('<span class="font-semibold text-rose-600 text-lg">Rp 0</span>');
+    
     const today = new Date().toISOString().split('T')[0];
     $('#bookingDate').attr('min', today);
     $('#bookingDate').val(today);
     
-    // Generate default time options
     generateTimeOptions();
     
-    // Load availability for today
     setTimeout(() => {
         updateAvailableSlots();
     }, 100);
     
-    // Show modal
     $('#bookingModal').show();
     document.body.style.overflow = 'hidden';
 }
@@ -407,6 +425,7 @@ function closeBookingModal() {
 function calculateBookingPrice() {
     const startTime = $('#startTime').val();
     const endTime = $('#endTime').val();
+    const priceDisplay = $('#priceDisplay');
     
     if (startTime && endTime && validateTime()) {
         const startHour = parseInt(startTime.split(':')[0]);
@@ -415,15 +434,31 @@ function calculateBookingPrice() {
         let durationHours = endHour - startHour;
         
         if (durationHours > 0) {
-            const totalPrice = currentVenuePrice * durationHours;
+            const originalTotalPrice = currentVenuePrice * durationHours;
+            let displayHtml = '';
+
+            if (currentDiscountPercent > 0) {
+                const discountedPrice = originalTotalPrice * (1 - (currentDiscountPercent / 100));
+                
+                displayHtml = `
+                    <span class="block text-red-600 line-through text-sm">Rp ${originalTotalPrice.toLocaleString('id-ID')}</span>
+                    <span class="block font-semibold text-green-600 text-lg">Rp ${discountedPrice.toLocaleString('id-ID')}</span>
+                `;
+            } else {
+                displayHtml = `
+                    <span class="block font-semibold text-rose-600 text-lg">Rp ${originalTotalPrice.toLocaleString('id-ID')}</span>
+                `;
+            }
+
             $('#duration').text(durationHours + ' jam');
-            $('#estimatedPrice').text('Rp ' + totalPrice.toLocaleString('id-ID'));
+            priceDisplay.html(displayHtml);
             $('#priceSummary').show();
             return true;
         }
     }
     
     $('#priceSummary').hide();
+    priceDisplay.html('<span class="font-semibold text-rose-600 text-lg">Rp 0</span>');
     return false;
 }
 
@@ -589,6 +624,7 @@ $(document).ready(function() {
             'booking_date': bookingDate,
             'start_time': startTime, 
             'end_time': endTime,
+            'promo_code': $('#promo_code').val().trim(),
             'csrfmiddlewaretoken': '{{ csrf_token }}'
         },
         success: function(response) {
@@ -631,6 +667,52 @@ $(document).ready(function() {
     
     $('#category, #min_price, #max_price').on('change', function() {
         filterVenues();
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const promoBtn = document.getElementById("apply_promo");
+    const promoInput = document.getElementById("promo_code");
+    const promoMsg = document.getElementById("promo_message");
+
+    promoBtn.addEventListener("click", () => {
+        const code = promoInput.value.trim();
+
+        if (!code) {
+            promoMsg.textContent = "Kode Promo tidak valid!";
+            promoMsg.className = "text-sm text-red-600";
+            currentDiscountPercent = 0;
+            calculateBookingPrice();
+            return;
+        }
+        
+        fetch("{% url 'promo:promo-validate' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `promo_code=${encodeURIComponent(code)}&promo_type=venue`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.valid) {
+                currentDiscountPercent = data.amount_discount;
+                promoMsg.textContent = data.message;
+                promoMsg.className = "text-sm text-green-600";
+            } else {
+                currentDiscountPercent = 0;
+                promoMsg.textContent = data.message || "Kode Promo tidak valid!";
+                promoMsg.className = "text-sm text-red-600";
+            }
+            calculateBookingPrice();
+        })
+        .catch(() => {
+            currentDiscountPercent = 0;
+            promoMsg.textContent = "Terjadi kesalahan. Coba lagi.";
+            promoMsg.className = "text-sm text-red-600";
+            calculateBookingPrice();
+        });
     });
 });
 </script>

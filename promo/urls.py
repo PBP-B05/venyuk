@@ -16,4 +16,6 @@ urlpatterns = [
     
     # cth: /promo/edit/5/ (pk = 5)
     path('edit/<int:pk>/', views.PromoUpdateView.as_view(), name='promo-update'),
+    
+    path('validate/', views.validate_promo, name='promo-validate'),
 ]

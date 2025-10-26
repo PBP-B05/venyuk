@@ -10,6 +10,7 @@ urlpatterns = [
     path('authenticate/', include('authenticate.urls')),
     path('match_up/', include('match_up.urls')),
     path('ven_shop/', include('ven_shop.urls')),
+    path('versus/', include('versus.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
