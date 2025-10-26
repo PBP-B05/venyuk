@@ -33,7 +33,7 @@ class PromoCreateView(LoginRequiredMixin, CreateView):
     model = Promo
     form_class = PromoForm
     template_name = 'promo/promo_form.html'
-    success_url = reverse_lazy('promo:promo-list') 
+    success_url = reverse_lazy('promo:promo_list') 
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -47,7 +47,7 @@ class PromoUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'promo/promo_form.html'
     slug_field = 'code'
     slug_url_kwarg = 'code'
-    success_url = reverse_lazy('promo:promo-list')
+    success_url = reverse_lazy('promo:promo_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
