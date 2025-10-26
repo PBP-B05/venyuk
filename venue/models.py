@@ -26,7 +26,7 @@ class Venue(models.Model):
     name = models.CharField(max_length=200)
     category = models.TextField(blank=True)
     address = models.TextField(blank=True)
-    thumbnail = models.ImageField(upload_to='venues/', blank=True, null=True)
+    thumbnail = models.URLField(blank=True, null=True)
     rating = models.FloatField(default=0.0)
     price = models.IntegerField(default=0)
     is_available = models.BooleanField(default=True)

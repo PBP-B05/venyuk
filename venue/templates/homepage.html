@@ -55,9 +55,9 @@
           <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
             <!-- Gambar Venue -->
             {% if venue.thumbnail %}
-                <img src="{{ venue.thumbnail.url }}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
+                <img src="{{ venue.thumbnail }}" alt="{{ venue.name }}" class="w-full h-56 object-cover">
             {% else %}
-                <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
+                <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover">
             {% endif %}
 
             <div class="p-5">
