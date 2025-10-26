@@ -5,8 +5,69 @@ from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 import json
-from datetime import datetime
+from datetime import datetime, date, time
 from .models import Venue, Booking
+
+# ==============================================================
+# AVAILABILITY CHECK API
+# ==============================================================
+
+@login_required
+def get_venue_availability(request, venue_id):
+    """Get available time slots for a venue on specific date"""
+    venue = get_object_or_404(Venue, id=venue_id)
+    
+    booking_date_str = request.GET.get('date')
+    if not booking_date_str:
+        return JsonResponse({'error': 'Date parameter required'}, status=400)
+    
+    try:
+        booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format'}, status=400)
+    
+    # Get all bookings for this venue on the selected date
+    bookings = Booking.objects.filter(
+        venue=venue,
+        booking_date=booking_date,
+        status__in=['pending', 'confirmed']
+    ).order_by('start_time')
+    
+    # Generate booked time slots
+    booked_slots = []
+    for booking in bookings:
+        booked_slots.append({
+            'start_time': booking.start_time.strftime('%H:%M'),
+            'end_time': booking.end_time.strftime('%H:%M')
+        })
+    
+    # Generate all possible time slots (7:00 - 22:00)
+    all_slots = []
+    for hour in range(7, 23):  # 7:00 to 22:00
+        all_slots.append(f"{hour:02d}:00")
+    
+    # Calculate available slots
+    available_slots = all_slots.copy()
+    
+    # Remove slots that are booked
+    for booked in booked_slots:
+        start_hour = int(booked['start_time'].split(':')[0])
+        end_hour = int(booked['end_time'].split(':')[0])
+        
+        # Remove all hours that are within the booked range
+        for hour in range(start_hour, end_hour):
+            slot_to_remove = f"{hour:02d}:00"
+            if slot_to_remove in available_slots:
+                available_slots.remove(slot_to_remove)
+    
+    return JsonResponse({
+        'venue_id': str(venue.id),
+        'venue_name': venue.name,
+        'booking_date': booking_date_str,
+        'booked_slots': booked_slots,
+        'available_slots': available_slots,
+        'all_slots': all_slots
+    })
 
 # ==============================================================
 # LANDING PAGE VIEW
@@ -26,19 +87,16 @@ def apply_filters(queryset, request):
     """Apply filters to the queryset"""
     query = request.GET.get('q', '').strip()
     if query:
-        queryset = queryset.filter(
-            Q(name__icontains=query) |
-            Q(address__icontains=query)
-        )
+        # PERBAIKAN: Hanya search berdasarkan nama venue saja
+        queryset = queryset.filter(name__icontains=query)
 
     category = request.GET.get('category')
     if category:
-        # Filter untuk multi-category (CSV)
         queryset = queryset.filter(
-            Q(category__icontains=category) |  # Category mengandung nilai yang dicari
-            Q(category__startswith=category + ',') |  # Category di awal
-            Q(category__endswith=',' + category) |  # Category di akhir
-            Q(category__contains=',' + category + ',')  # Category di tengah
+            Q(category__icontains=category) |
+            Q(category__startswith=category + ',') |
+            Q(category__endswith=',' + category) |
+            Q(category__contains=',' + category + ',')
         )
 
     min_price = request.GET.get('min_price')
@@ -84,8 +142,8 @@ def home_section(request):
         data = [{
             'id': str(venue.id),
             'name': venue.name,
-            'category': venue.get_categories_display(),  # Untuk display string
-            'categories_list': venue.get_categories_display_list(),  # Untuk tags dengan display names
+            'category': venue.get_categories_display(),
+            'categories_list': venue.get_categories_display_list(),
             'price': venue.price,
             'rating': float(venue.rating),
             'address': venue.address,
@@ -102,42 +160,74 @@ def home_section(request):
     return render(request, 'homepage.html', context)
 
 # ==============================================================
-# BOOKING VENUE
+# BOOKING VENUE - IMPROVED VERSION
 # ==============================================================
 
 @login_required(login_url='/authenticate/login/')
 @csrf_exempt
 def book_venue(request, venue_id):
-    """Handle venue booking dengan detail"""
+    """Handle venue booking dengan validasi lengkap"""
     if request.method != 'POST':
-        return HttpResponseBadRequest('Invalid request method')
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid request method'
+        }, status=405)
 
     venue = get_object_or_404(Venue, id=venue_id)
     
     try:
-        # Parse JSON data
-        data = json.loads(request.body)
-        booking_date = data.get('booking_date')
-        start_time = data.get('start_time')
-        end_time = data.get('end_time')
+        # Gunakan request.POST langsung
+        booking_date_str = request.POST.get('booking_date')
+        start_time_str = request.POST.get('start_time')
+        end_time_str = request.POST.get('end_time')
         
-        # Validasi data
-        if not all([booking_date, start_time, end_time]):
+        print(f"DEBUG: Received data - {booking_date_str}, {start_time_str}, {end_time_str}")
+        
+        # Validasi data input
+        if not all([booking_date_str, start_time_str, end_time_str]):
             return JsonResponse({
-                'status': 'error',
+                'success': False,
                 'message': 'Semua field harus diisi'
             }, status=400)
-            
-        # Validasi tanggal tidak boleh di masa lalu
-        booking_date_obj = datetime.strptime(booking_date, '%Y-%m-%d').date()
-        if booking_date_obj < datetime.now().date():
+        
+        # Parse dates and times
+        try:
+            booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
+            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+        except ValueError as e:
             return JsonResponse({
-                'status': 'error',
-                'message': 'Tanggal booking tidak boleh di masa lalu'
+                'success': False,
+                'message': f'Format tanggal atau waktu tidak valid: {str(e)}'
             }, status=400)
-            
+        
+        # Validasi tanggal tidak boleh di masa lalu
+        if booking_date < date.today():
+            return JsonResponse({
+                'success': False,
+                'message': 'Tidak bisa booking untuk tanggal yang sudah lewat'
+            }, status=400)
+        
+        # Validasi waktu selesai harus setelah waktu mulai
+        if end_time <= start_time:
+            return JsonResponse({
+                'success': False,
+                'message': 'Waktu selesai harus setelah waktu mulai'
+            }, status=400)
+        
+        # Validasi durasi minimal 1 jam
+        start_dt = datetime.combine(date.today(), start_time)
+        end_dt = datetime.combine(date.today(), end_time)
+        duration_hours = (end_dt - start_dt).seconds / 3600
+        
+        if duration_hours < 1:
+            return JsonResponse({
+                'success': False,
+                'message': 'Durasi booking minimal 1 jam'
+            }, status=400)
+        
         # Cek ketersediaan venue pada tanggal dan waktu tersebut
-        existing_booking = Booking.objects.filter(
+        conflicting_booking = Booking.objects.filter(
             venue=venue,
             booking_date=booking_date,
             status__in=['pending', 'confirmed'],
@@ -145,26 +235,16 @@ def book_venue(request, venue_id):
             end_time__gt=start_time
         ).exists()
         
-        if existing_booking:
+        if conflicting_booking:
             return JsonResponse({
-                'status': 'error',
-                'message': 'Venue sudah dibooking pada waktu tersebut'
+                'success': False,
+                'message': 'Venue sudah dibooking pada waktu tersebut. Silakan pilih waktu lain.'
             }, status=400)
-            
-        # Hitung total harga (sederhana: price per jam)
-        start_dt = datetime.strptime(start_time, '%H:%M')
-        end_dt = datetime.strptime(end_time, '%H:%M')
-        duration_hours = (end_dt - start_dt).seconds / 3600
         
-        if duration_hours <= 0:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Waktu selesai harus setelah waktu mulai'
-            }, status=400)
-            
+        # Hitung total harga
         total_price = int(venue.price * duration_hours)
         
-        # Create booking
+        # Create booking dengan user yang sedang login
         booking = Booking.objects.create(
             user=request.user,
             venue=venue,
@@ -172,24 +252,25 @@ def book_venue(request, venue_id):
             start_time=start_time,
             end_time=end_time,
             total_price=total_price,
-            status='pending'
+            status='confirmed'
         )
         
         return JsonResponse({
-            'status': 'success',
-            'message': 'Booking berhasil dibuat! Silakan tunggu konfirmasi.',
+            'success': True,
+            'message': 'Booking berhasil dibuat!',
             'booking_id': str(booking.id),
-            'total_price': total_price
+            'total_price': total_price,
+            'duration_hours': duration_hours,
+            'venue_name': venue.name,
+            'booking_date': booking_date_str,
+            'start_time': start_time_str,
+            'end_time': end_time_str
         })
         
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Format data tidak valid'
-        }, status=400)
     except Exception as e:
+        print(f"ERROR in book_venue: {str(e)}")
         return JsonResponse({
-            'status': 'error',
+            'success': False,
             'message': f'Terjadi kesalahan: {str(e)}'
         }, status=500)
 
@@ -199,29 +280,55 @@ def my_bookings(request):
     bookings = Booking.objects.filter(user=request.user).select_related('venue').order_by('-created_at')
     return render(request, 'my_bookings.html', {'bookings': bookings})
 
+# ==============================================================
+# CANCEL BOOKING - IMPROVED VERSION
+# ==============================================================
+
 @login_required
 @csrf_exempt
 def cancel_booking(request, booking_id):
-    """Cancel booking"""
+    """Cancel booking dengan AJAX support"""
     if request.method != 'POST':
-        return HttpResponseBadRequest('Invalid request method')
-    
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    
-    # Hanya bisa cancel booking yang masih pending/confirmed
-    if booking.status not in ['pending', 'confirmed']:
         return JsonResponse({
-            'status': 'error',
-            'message': 'Tidak bisa membatalkan booking ini'
-        }, status=400)
+            'success': False,
+            'message': 'Invalid request method'
+        }, status=405)
     
-    booking.status = 'cancelled'
-    booking.save()
-    
-    return JsonResponse({
-        'status': 'success',
-        'message': 'Booking berhasil dibatalkan'
-    })
+    try:
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        
+        if booking.status not in ['pending', 'confirmed']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Tidak bisa membatalkan booking ini'
+            }, status=400)
+        
+        # Simpan info booking sebelum diupdate (untuk response)
+        booking_info = {
+            'venue_name': booking.venue.name,
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d'),
+            'start_time': booking.start_time.strftime('%H:%M'),
+            'end_time': booking.end_time.strftime('%H:%M')
+        }
+        
+        # Update status booking
+        booking.status = 'cancelled'
+        booking.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Booking {booking_info["venue_name"]} pada {booking_info["booking_date"]} berhasil dibatalkan',
+            'booking_id': str(booking.id),
+            'venue_name': booking_info['venue_name'],
+            'booking_date': booking_info['booking_date']
+        })
+        
+    except Exception as e:
+        print(f"ERROR in cancel_booking: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        }, status=500)
 
 # ==============================================================
 # API ENDPOINTS

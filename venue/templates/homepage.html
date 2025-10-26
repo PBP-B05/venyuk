@@ -110,6 +110,11 @@
   </div>
 </div>
 
+<!-- Toast Notifications -->
+<div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
+    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
+</div>
+
 <!-- Booking Modal -->
 <div id="bookingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeBookingModal()"></div>
@@ -130,6 +135,7 @@
                     <input type="date" id="bookingDate" 
                            class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400"
                            required>
+                    <p class="text-xs text-slate-500 mt-1">Pilih tanggal booking</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
@@ -145,6 +151,11 @@
                             <option value="">Pilih Jam</option>
                         </select>
                     </div>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="timeError" class="text-red-600 text-sm hidden">
+                    ⚠️ Waktu selesai harus setelah waktu mulai
                 </div>
                 
                 <div id="priceSummary" class="bg-slate-50 rounded-lg p-4 hidden">
@@ -165,7 +176,7 @@
                     Batal
                 </button>
                 <button type="submit" id="submitBookingBtn"
-                        class="flex-1 py-2 px-4 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition font-semibold">
+                        class="flex-1 py-2 px-4 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition font-semibold disabled:bg-slate-400 disabled:cursor-not-allowed">
                     Booking Sekarang
                 </button>
             </div>
@@ -173,17 +184,14 @@
     </div>
 </div>
 
-<!-- Toast Notifications -->
-<div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
-    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
-</div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 let currentVenuePrice = 0;
 let currentVenueId = '';
+let currentVenueName = '';
+let availableSlots = [];
 
-// Function untuk generate jam options
+// Function untuk generate jam options dengan validasi
 function generateTimeOptions() {
     const startSelect = $('#startTime');
     const endSelect = $('#endTime');
@@ -192,34 +200,197 @@ function generateTimeOptions() {
     startSelect.find('option:not(:first)').remove();
     endSelect.find('option:not(:first)').remove();
     
-    // Generate hours 00-23
-    for (let i = 0; i <= 23; i++) {
+    // Generate hours 07-22 (waktu operasional normal)
+    for (let i = 7; i <= 22; i++) {
         const hour = i.toString().padStart(2, '0');
         const timeValue = `${hour}:00`;
         const timeDisplay = `${hour}:00`;
         
         startSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
-        endSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
+        if (i > 7) { // End time options mulai dari jam 8
+            endSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
+        }
     }
 }
 
+// Function untuk update available time slots berdasarkan tanggal
+function updateAvailableSlots() {
+    const venueId = currentVenueId;
+    const bookingDate = $('#bookingDate').val();
+    
+    if (!venueId || !bookingDate) {
+        return;
+    }
+    
+    // Show loading state
+    $('#startTime, #endTime').prop('disabled', true);
+    $('#startTime').html('<option value="">Memuat jam tersedia...</option>');
+    $('#endTime').html('<option value="">Memuat jam tersedia...</option>');
+    
+    const availabilityUrl = `{% url 'venue:get_venue_availability' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', venueId);
+    
+    $.ajax({
+        url: availabilityUrl,
+        method: 'GET',
+        data: {
+            'date': bookingDate
+        },
+        success: function(response) {
+            availableSlots = response.available_slots;
+            
+            // Update start time options
+            const startSelect = $('#startTime');
+            startSelect.empty().append('<option value="">Pilih Jam Mulai</option>');
+            
+            // Untuk start time, semua slot available kecuali yang terakhir (22:00)
+            availableSlots.forEach(slot => {
+                if (slot !== '22:00') { // 22:00 tidak bisa jadi start time
+                    startSelect.append(`<option value="${slot}">${slot}</option>`);
+                }
+            });
+            
+            // Reset end time
+            const endSelect = $('#endTime');
+            endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+            
+            // Enable selects
+            $('#startTime, #endTime').prop('disabled', false);
+            
+            // Show booked slots info
+            if (response.booked_slots.length > 0) {
+                showToast("Info", `Ada ${response.booked_slots.length} slot waktu yang sudah dibooking pada tanggal ini`, "info");
+            }
+        },
+        error: function(xhr) {
+            console.error('Error fetching availability:', xhr);
+            // Fallback: enable all slots
+            $('#startTime, #endTime').prop('disabled', false);
+            generateTimeOptions(); // Reset to default
+            showToast("Error", "Gagal memuat jam tersedia", "error");
+        }
+    });
+}
+
+// Function untuk update end time options berdasarkan start time yang dipilih
+function updateEndTimeOptions() {
+    const startTime = $('#startTime').val();
+    const endSelect = $('#endTime');
+    
+    if (!startTime) {
+        endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+        return;
+    }
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+    
+    // Filter available slots untuk end time
+    availableSlots.forEach(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        
+        if (slotHour > startHour) {
+            // Cek apakah slot ini valid sebagai end time
+            let allIntermediateSlotsAvailable = true;
+            
+            for (let hour = startHour + 1; hour <= slotHour; hour++) {
+                const intermediateSlot = `${hour.toString().padStart(2, '0')}:00`;
+                if (!availableSlots.includes(intermediateSlot) && hour !== slotHour) {
+                    allIntermediateSlotsAvailable = false;
+                    break;
+                }
+            }
+            
+            if (allIntermediateSlotsAvailable) {
+                endSelect.append(`<option value="${slot}">${slot}</option>`);
+            }
+        }
+    });
+    
+    // Validasi ulang
+    validateTime();
+    calculateBookingPrice();
+}
+
+// Function untuk cek apakah time range valid
+function isTimeRangeValid(startTime, endTime) {
+    if (!startTime || !endTime) return false;
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = parseInt(endTime.split(':')[0]);
+    
+    // Validasi dasar: end time harus setelah start time
+    if (endHour <= startHour) return false;
+    
+    // Validasi availability: semua jam di antara harus available
+    for (let hour = startHour; hour < endHour; hour++) {
+        const slot = `${hour.toString().padStart(2, '0')}:00`;
+        if (!availableSlots.includes(slot)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Validasi waktu
+function validateTime() {
+    const startTime = $('#startTime').val();
+    const endTime = $('#endTime').val();
+    const timeError = $('#timeError');
+    
+    if (startTime && endTime) {
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        if (endHour <= startHour) {
+            timeError.text("⚠️ Waktu selesai harus setelah waktu mulai");
+            timeError.show();
+            $('#submitBookingBtn').prop('disabled', true);
+            return false;
+        } else if (!isTimeRangeValid(startTime, endTime)) {
+            timeError.text("⚠️ Ada jam dalam rentang waktu ini yang sudah dibooking");
+            timeError.show();
+            $('#submitBookingBtn').prop('disabled', true);
+            return false;
+        } else {
+            timeError.hide();
+            $('#submitBookingBtn').prop('disabled', false);
+            return true;
+        }
+    }
+    
+    timeError.hide();
+    $('#submitBookingBtn').prop('disabled', true);
+    return false;
+}
+
 // Optimized Modal Functions
-function openBookingModal(venueId, venuePrice) {
+function openBookingModal(venueId, venuePrice, venueName = '') {
     currentVenuePrice = venuePrice;
     currentVenueId = venueId;
+    currentVenueName = venueName;
     $('#bookingVenueId').val(venueId);
     
     // Reset form
     $('#bookingForm')[0].reset();
     $('#priceSummary').hide();
-    $('#submitBookingBtn').prop('disabled', false).text('Booking Sekarang');
+    $('#timeError').hide();
+    $('#submitBookingBtn').prop('disabled', true).text('Booking Sekarang');
     
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     $('#bookingDate').attr('min', today);
     $('#bookingDate').val(today);
     
-    // Show modal dengan backdrop blur
+    // Generate default time options
+    generateTimeOptions();
+    
+    // Load availability for today
+    setTimeout(() => {
+        updateAvailableSlots();
+    }, 100);
+    
+    // Show modal
     $('#bookingModal').show();
     document.body.style.overflow = 'hidden';
 }
@@ -229,13 +400,15 @@ function closeBookingModal() {
     document.body.style.overflow = '';
     currentVenuePrice = 0;
     currentVenueId = '';
+    currentVenueName = '';
+    availableSlots = [];
 }
 
 function calculateBookingPrice() {
     const startTime = $('#startTime').val();
     const endTime = $('#endTime').val();
     
-    if (startTime && endTime) {
+    if (startTime && endTime && validateTime()) {
         const startHour = parseInt(startTime.split(':')[0]);
         const endHour = parseInt(endTime.split(':')[0]);
         
@@ -246,20 +419,21 @@ function calculateBookingPrice() {
             $('#duration').text(durationHours + ' jam');
             $('#estimatedPrice').text('Rp ' + totalPrice.toLocaleString('id-ID'));
             $('#priceSummary').show();
-            $('#submitBookingBtn').prop('disabled', false);
-        } else {
-            $('#priceSummary').hide();
-            $('#submitBookingBtn').prop('disabled', true);
+            return true;
         }
-    } else {
-        $('#priceSummary').hide();
-        $('#submitBookingBtn').prop('disabled', true);
     }
+    
+    $('#priceSummary').hide();
+    return false;
 }
 
 // Global Functions
 function bookVenue(venueId, venuePrice) {
-    openBookingModal(venueId, venuePrice);
+    // Dapatkan nama venue dari card
+    const venueCard = $(`[onclick*="${venueId}"]`).closest('.venue-card');
+    const venueName = venueCard.find('h3').text().trim();
+    
+    openBookingModal(venueId, venuePrice, venueName);
 }
 
 function filterVenues() {
@@ -308,7 +482,6 @@ function updateVenues(venues) {
         const buttonText = isAvailable ? 'Book Now' : 'Not Available';
         const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price})` : '';
 
-        // Generate category tags dengan display names
         const categoryTags = venue.categories_list && venue.categories_list.length > 0 
             ? venue.categories_list.map(cat => 
                 `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${cat}</span>`
@@ -349,13 +522,14 @@ function showToast(title, message, type) {
 
     const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
                 : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+                : type === "info" ? "bg-blue-100 text-blue-800 border-blue-300"
                 : "bg-yellow-100 text-yellow-800 border-yellow-300";
 
     inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
     inner.html(`<strong>${title}</strong><br>${message}`);
     toast.show();
 
-    setTimeout(() => toast.hide(), 3000);
+    setTimeout(() => toast.hide(), 5000);
 }
 
 // Event Handlers - Optimized
@@ -363,58 +537,117 @@ $(document).ready(function() {
     // Generate time options saat page load
     generateTimeOptions();
     
-    // Booking modal events
-    $('#startTime, #endTime').on('change', calculateBookingPrice);
+    // Event ketika tanggal berubah - update available slots
+    $('#bookingDate').on('change', function() {
+        updateAvailableSlots();
+        $('#priceSummary').hide();
+    });
+    
+    // Event ketika start time berubah - update end time options
+    $('#startTime').on('change', function() {
+        updateEndTimeOptions();
+        calculateBookingPrice();
+    });
+    
+    // Event ketika end time berubah
+    $('#endTime').on('change', function() {
+        validateTime();
+        calculateBookingPrice();
+    });
     
     $('#bookingForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        const venueId = $('#bookingVenueId').val();
-        const bookingDate = $('#bookingDate').val();
-        const startTime = $('#startTime').val();
-        const endTime = $('#endTime').val();
-        
-        if (!bookingDate || !startTime || !endTime) {
-            showToast("Error", "Harap isi semua field", "error");
-            return;
-        }
-        
-        const startHour = parseInt(startTime.split(':')[0]);
-        const endHour = parseInt(endTime.split(':')[0]);
-        
-        if (endHour <= startHour) {
-            showToast("Error", "Waktu selesai harus setelah waktu mulai", "error");
-            return;
-        }
-        
-        // Disable button selama proses
-        $('#submitBookingBtn').prop('disabled', true).text('Memproses...');
-        
-        $.ajax({
-            url: `/venue/book/${venueId}/`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                booking_date: bookingDate,
-                start_time: startTime,
-                end_time: endTime
-            }),
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            success: function(response) {
-                showToast("Success", response.message, "success");
+    e.preventDefault();
+    
+    const venueId = $('#bookingVenueId').val();
+    const bookingDate = $('#bookingDate').val();
+    const startTime = $('#startTime').val();
+    const endTime = $('#endTime').val();
+    
+    console.log('Booking data:', { venueId, bookingDate, startTime, endTime });
+    
+    // Validasi client-side
+    if (!bookingDate || !startTime || !endTime) {
+        showToast("Error", "Harap isi semua field", "error");
+        return;
+    }
+    
+    if (!validateTime()) {
+        showToast("Error", "Waktu selesai harus setelah waktu mulai", "error");
+        return;
+    }
+    
+    // Disable button selama proses
+    $('#submitBookingBtn').prop('disabled', true).text('Memproses...');
+    
+    // Gunakan form data biasa
+    const bookingUrl = `{% url 'venue:book_venue' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', venueId);
+    
+    $.ajax({
+        url: bookingUrl,
+        method: 'POST',
+        data: {
+            'booking_date': bookingDate,
+            'start_time': startTime, 
+            'end_time': endTime,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            console.log('Booking success:', response);
+            if (response.success) {
+                showToast("Success!", response.message, "success");
                 closeBookingModal();
-                setTimeout(() => location.reload(), 1500);
-            },
-            error: function(xhr) {
-                const errorMessage = xhr.responseJSON?.message || "Booking gagal";
-                showToast("Error", errorMessage, "error");
+                
+                // PERBAIKAN: Refresh halaman setelah 2 detik untuk update availability
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showToast("Error", response.message, "error");
                 $('#submitBookingBtn').prop('disabled', false).text('Booking Sekarang');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('Booking error:', xhr.responseText);
+            let errorMessage = "Terjadi kesalahan saat booking";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMessage = response.message || errorMessage;
+            } catch (e) {
+                if (xhr.status === 400) {
+                    errorMessage = "Data yang dikirim tidak valid. Silakan coba lagi.";
+                }
+            }
+            
+            showToast("Error", errorMessage, "error");
+            $('#submitBookingBtn').prop('disabled', false).text('Booking Sekarang');
             }
         });
     });
+        
+    // Event untuk real-time filter saat mengetik
+    $('#search').on('input', function() {
+        filterVenues();
+    });
+    
+    $('#category, #min_price, #max_price').on('change', function() {
+        filterVenues();
+    });
 });
 </script>
+
+<style>
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "Memuat...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+</style>
 
 {% endblock content %}

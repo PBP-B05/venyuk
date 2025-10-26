@@ -1,7 +1,8 @@
 from django.db import models
 import uuid
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
+from datetime import datetime, date, time
 
 class Venue(models.Model):
     CATEGORY_CHOICES = [
@@ -23,7 +24,7 @@ class Venue(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
-    category = models.TextField(blank=True)  # Menyimpan sebagai CSV: "padel,tennis,badminton"
+    category = models.TextField(blank=True)
     address = models.TextField(blank=True)
     thumbnail = models.ImageField(upload_to='venues/', blank=True, null=True)
     rating = models.FloatField(default=0.0)
@@ -36,23 +37,19 @@ class Venue(models.Model):
         return self.name
     
     def get_categories_list(self):
-        """Return categories as list"""
         if self.category:
             return [cat.strip() for cat in self.category.split(',')]
         return []
     
     def get_categories_display(self):
-        """Return formatted categories string"""
         categories = self.get_categories_list()
         return ", ".join([dict(self.CATEGORY_CHOICES).get(cat, cat) for cat in categories])
     
     def get_categories_display_list(self):
-        """Return categories as list with display names"""
         categories = self.get_categories_list()
         return [dict(self.CATEGORY_CHOICES).get(cat, cat) for cat in categories]
     
     def set_categories(self, categories_list):
-        """Set categories from list"""
         self.category = ",".join(categories_list)
 
 class Booking(models.Model):
@@ -76,3 +73,44 @@ class Booking(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.venue.name} - {self.booking_date}"
+    
+    def clean(self):
+        """Validasi logika booking"""
+        # Validasi waktu selesai harus setelah waktu mulai
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValidationError("Waktu selesai harus setelah waktu mulai")
+            
+            # Validasi durasi minimal 1 jam
+            start_dt = datetime.combine(date.today(), self.start_time)
+            end_dt = datetime.combine(date.today(), self.end_time)
+            duration_hours = (end_dt - start_dt).seconds / 3600
+            if duration_hours < 1:
+                raise ValidationError("Durasi booking minimal 1 jam")
+        
+        # Validasi tanggal booking tidak boleh di masa lalu
+        if self.booking_date and self.booking_date < date.today():
+            raise ValidationError("Tidak bisa booking untuk tanggal yang sudah lewat")
+    
+    def save(self, *args, **kwargs):
+        """Override save untuk validasi"""
+        self.clean()
+        super().save(*args, **kwargs)
+    
+    def get_duration_hours(self):
+        """Hitung durasi dalam jam"""
+        start_dt = datetime.combine(date.today(), self.start_time)
+        end_dt = datetime.combine(date.today(), self.end_time)
+        return (end_dt - start_dt).seconds / 3600
+    
+    def check_availability(self):
+        """Cek apakah venue available pada waktu yang diminta"""
+        conflicting_bookings = Booking.objects.filter(
+            venue=self.venue,
+            booking_date=self.booking_date,
+            status__in=['pending', 'confirmed'],
+            start_time__lt=self.end_time,
+            end_time__gt=self.start_time
+        ).exclude(id=self.id)
+        
+        return not conflicting_bookings.exists()
