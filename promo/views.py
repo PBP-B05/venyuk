@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.utils import timezone
 from .models import Promo
 from .forms import PromoForm
@@ -26,7 +26,7 @@ class PromoDetailView(DetailView):
     slug_field = 'code' 
     slug_url_kwarg = 'code'
 
-class PromoCreateView(LoginRequiredMixin, CreateView):
+class PromoCreateView(UserPassesTestMixin, CreateView):
     """
     View untuk membuat promo baru. Hanya untuk user yang login.
     """
@@ -41,7 +41,7 @@ class PromoCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class PromoUpdateView(LoginRequiredMixin, UpdateView):
+class PromoUpdateView(UserPassesTestMixin, UpdateView):
     model = Promo
     form_class = PromoForm
     template_name = 'promo/promo_form.html'
@@ -54,7 +54,7 @@ class PromoUpdateView(LoginRequiredMixin, UpdateView):
         context['page_title'] = f'Edit Promo: {self.object.title}'
         return context
 
-class PromoDeleteView(LoginRequiredMixin, DeleteView):
+class PromoDeleteView(UserPassesTestMixin, DeleteView):
     model = Promo
     slug_field = 'code'
     slug_url_kwarg = 'code'

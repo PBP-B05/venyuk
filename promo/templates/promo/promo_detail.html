@@ -71,8 +71,7 @@
                             </div>
                         </div>
 
-                        <!-- Tombol Edit (Hanya untuk user login) -->
-                        {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
                         <a href="{% url 'promo:promo_update' promo.code %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 mt-8 shadow-md">
                             Edit Promo Ini
                         </a>
