@@ -80,12 +80,6 @@
                         <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
                         <textarea id="address" name="address" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#D84040] focus:border-[#D84040]" placeholder="Masukkan alamat lengkap Anda..."></textarea>
                     </div>
-                    <!-- Promo -->
-                    <div class="mb-4">
-                        <label for="promo" class="block text-sm font-medium text-gray-700 mb-1">Promo (Opsional)</label>
-                        <input type="text" id="promo" name="promo" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#D84040] focus:border-[#D84040]" placeholder="Masukkan kode promo SHOP jika ada...">
-                        <div id="promo-message" class="mt-2 text-sm hidden"></div>
-                    </div>
                    
                     <!-- Metode Pembayaran (sama) -->
                     <div class="mb-6">
@@ -105,56 +99,4 @@
         </div>
     </div>
 </div>
-
-<!-- JavaScript (update untuk tampilkan discount_amount) -->
-<script>
-    const promoInput = document.getElementById('promo');
-    const promoMessage = document.getElementById('promo-message');
-    const totalPrice = document.getElementById('total-price');
-    const discountDetail = document.getElementById('discount-detail');
-    const originalPrice = '{{ product.price }}'; 
-
-    promoInput.addEventListener('input', function() {
-        const code = this.value.trim();
-        if (code.length === 0) {
-            promoMessage.classList.add('hidden');
-            discountDetail.classList.add('hidden');
-            updateTotal(originalPrice, 0, 0);
-            return;
-        }
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '{% url "promo:validate_promo" %}', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                if (response.valid) {
-                    const discountAmount = originalPrice * (response.amount_discount / 100);
-                    promoMessage.textContent = response.message;
-                    promoMessage.classList.remove('hidden');
-                    promoMessage.classList.add('text-green-600');
-                    discountDetail.innerHTML = `<span>Diskon: -Rp ${discountAmount.toLocaleString('id-ID')}</span>`;
-                    discountDetail.classList.remove('hidden');
-                    updateTotal(originalPrice, response.amount_discount, discountAmount);
-                } else {
-                    promoMessage.textContent = response.message;
-                    promoMessage.classList.remove('hidden');
-                    promoMessage.classList.add('text-red-600');
-                    discountDetail.classList.add('hidden');
-                    updateTotal(originalPrice, 0, 0);
-                }
-            }
-        };
-
-        xhr.send(`promo_code=${encodeURIComponent(code)}&promo_type=shop`);
-    });
-
-    function updateTotal(price, discountPercent, discountAmount) {
-        const finalPrice = price - discountAmount;
-        totalPrice.textContent = `Rp ${finalPrice.toLocaleString('id-ID')}`;
-    }
-</script>
 {% endblock content %}
