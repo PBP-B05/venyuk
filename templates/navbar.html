@@ -8,9 +8,9 @@
     <ul class="nav-links">
         <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
         <li><a href="{% url 'promo:promo-list' %}">Promo</a></li>
-        <li><a href="#ven-shop">Ven-Shop</a></li>
-        <li><a href="#main-bareng">Main Bareng</a></li>
-        <li><a href="#versus">Versus</a></li>
+        <li><a href="{% url 'ven_shop:show_main' %}">Ven-Shop</a></li>
+        <li><a href="{% url 'match_up:show_matches' %}">Main Bareng</a></li>
+        <li><a href="{% url 'versus:list' %}">Versus</a></li>
         <li><a href="{% url 'blog:show_blogmain' %}">Blog</a></li> </ul>
     </ul>
 
