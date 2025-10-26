@@ -40,7 +40,7 @@ def add_blog(request):
         post_data = request.POST.copy()
         if not request.user.is_superuser:
             post_data['category'] = 'community posts'
-        form = BlogForm(post_data,request.FILES)
+        form = BlogForm(post_data)
 
         if form.is_valid():
             blog_entry = form.save(commit = False)
@@ -148,11 +148,12 @@ def add_blog_ajax(request):
         post_data = request.POST.copy()
         if not request.user.is_superuser:
             post_data['category'] = 'community posts'
-        form = BlogForm(post_data, request.FILES)
         if not request.user.is_superuser:
-            form.fields['category'].choices = [
-                ('community posts', 'Community Posts')
-            ]
+            BlogForm.base_fields['category'].choices = [
+        ('community posts', 'Community Posts')
+    ]
+        form = BlogForm(post_data)
+
         if form.is_valid():
             blog_entry = form.save(commit=False)
             blog_entry.user = request.user
