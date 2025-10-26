@@ -2,11 +2,11 @@
     
     <!-- gambar -->
     <div class="md:w-1/2 w-full relative overflow-hidden">
-        {% if match.venue and match.venue.thumbnail %}
-            <img src="{{ match.venue.thumbnail.url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
+        {% if match.venue and match.venue.get_image_url %}
+            <img src="{{ match.venue.get_image_url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
         {% else %}
-            <div class="w-full h-full bg-gray-200 flex items-center justify-center min-h-[200px] md:min-h-[250px]">
-                <span class="text-gray-400">No Image</span>
+            <div class="w-full h-full flex items-center justify-center bg-gray-400 text-gray-100 font-semibold text-lg">
+                No Image
             </div>
         {% endif %}
 

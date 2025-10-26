@@ -11,7 +11,7 @@
         <li><a href="{% url 'ven_shop:show_main' %}">Ven-Shop</a></li>
         <li><a href="{% url 'match_up:show_matches' %}">Match Up</a></li>
         <li><a href="{% url 'versus:list' %}">Versus</a></li>
-        <li><a href="#blog">Blog</a></li>
+        <li><a href="{% url 'blog:show_blogmain' %}">Blog</a></li>
     </ul>
 
     {% if user.is_authenticated %}
@@ -24,7 +24,7 @@
 
             <!-- Dropdown Menu -->
             <div class="dropdown-menu hidden" id="dropdown-menu">
-                <a href="{% url 'authenticate:login' %}">👤 Profile</a>
+                <a href="{% url 'authenticate:profile' %}">👤 Profile</a>
                 <a href="{% url 'venue:my_bookings' %}">📊 Dashboard</a>
                 <a href="{% url 'authenticate:logout' %}">🚪 Logout</a>
             </div>

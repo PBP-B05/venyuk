@@ -103,8 +103,8 @@
                      data-start-time="{{ match.start_time|date:'H' }}">
                     
                     <div class="w-[340px] h-[190px] bg-white rounded-2xl overflow-hidden shadow-lg relative">
-                        {% if match.venue and match.venue.thumbnail %}
-                            <img src="{{ match.venue.thumbnail.url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
+                        {% if match.venue and match.venue.get_image_url %}
+                            <img src="{{ match.venue.get_image_url }}" alt="{{ match.venue.name }}" class="w-full h-full object-cover">
                         {% else %}
                             <div class="w-full h-full flex items-center justify-center bg-gray-400 text-gray-100 font-semibold text-lg">
                                 No Image

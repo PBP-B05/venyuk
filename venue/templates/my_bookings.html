@@ -18,48 +18,81 @@
         {% if bookings %}
         <div class="grid gap-6" id="bookings-container">
             {% for booking in bookings %}
-            <div class="booking-item bg-white rounded-xl border border-slate-200 shadow-sm p-6" data-booking-id="{{ booking.id }}">
+            <div class="booking-item bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all duration-300" 
+                 data-booking-id="{{ booking.id }}">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex-1">
                         <div class="flex items-start justify-between mb-4">
-                            <div>
-                                <h3 class="text-xl font-semibold text-slate-800 mb-1">{{ booking.venue.name }}</h3>
-                                <div class="flex items-center text-slate-600 mb-2">
-                                    <span class="text-sm">{{ booking.venue.get_categories_display }}</span>
+                            <div class="flex items-start space-x-4">
+                                {% if booking.venue.thumbnail %}
+                                <img src="{{ booking.venue.thumbnail.url }}" alt="{{ booking.venue.name }}" 
+                                     class="w-16 h-16 rounded-lg object-cover flex-shrink-0">
+                                {% else %}
+                                <div class="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-slate-400 text-xs text-center">No Image</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h3 class="text-xl font-semibold text-slate-800 mb-1">{{ booking.venue.name }}</h3>
+                                    <div class="flex items-center text-slate-600 mb-2">
+                                        <span class="text-sm">{{ booking.venue.get_categories_display }}</span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-slate-500">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        {{ booking.venue.address|truncatewords:5 }}
+                                    </div>
                                 </div>
                             </div>
                             <span class="px-3 py-1 rounded-full text-sm font-medium 
-                                {% if booking.status == 'confirmed' %}bg-green-100 text-green-800
-                                {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                {% elif booking.status == 'cancelled' %}bg-red-100 text-red-800
-                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {% if booking.status == 'confirmed' %}bg-green-100 text-green-800 border border-green-200
+                                {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800 border border-yellow-200
+                                {% elif booking.status == 'cancelled' %}bg-red-100 text-red-800 border border-red-200
+                                {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
                                 {{ booking.get_status_display }}
                             </span>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div>
-                                <span class="text-slate-500">Tanggal</span>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-500 block mb-1">Tanggal</span>
                                 <p class="font-medium text-slate-800">{{ booking.booking_date }}</p>
                             </div>
-                            <div>
-                                <span class="text-slate-500">Waktu</span>
-                                <p class="font-medium text-slate-800">{{ booking.start_time }} - {{ booking.end_time }}</p>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-500 block mb-1">Waktu</span>
+                                <p class="font-medium text-slate-800">{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</p>
                             </div>
-                            <div>
-                                <span class="text-slate-500">Total Harga</span>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-500 block mb-1">Durasi</span>
+                                <p class="font-medium text-slate-800">{{ booking.get_duration_hours }} jam</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-500 block mb-1">Total Harga</span>
                                 <p class="font-medium text-rose-600">Rp {{ booking.total_price|floatformat:0 }}</p>
                             </div>
                         </div>
                     </div>
                     
                     {% if booking.status == 'pending' or booking.status == 'confirmed' %}
-                    <div class="mt-4 lg:mt-0 lg:ml-6">
+                    <div class="mt-4 lg:mt-0 lg:ml-6 flex gap-2">
                         <button type="button" 
-                                class="cancel-booking-btn px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition font-medium text-sm"
+                                class="edit-booking-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium text-sm flex items-center gap-2"
+                                data-booking-id="{{ booking.id }}"
+                                data-venue-name="{{ booking.venue.name }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit
+                        </button>
+                        <button type="button" 
+                                class="cancel-booking-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium text-sm flex items-center gap-2"
                                 data-booking-id="{{ booking.id }}"
                                 data-venue-name="{{ booking.venue.name }}"
                                 data-booking-date="{{ booking.booking_date }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                             Batalkan
                         </button>
                     </div>
@@ -67,8 +100,21 @@
                 </div>
                 
                 <div class="mt-4 pt-4 border-t border-slate-100">
-                    <div class="flex items-center text-slate-500 text-sm">
-                        <span>Dibooking pada: {{ booking.created_at|date:"d M Y H:i" }}</span>
+                    <div class="flex items-center justify-between text-slate-500 text-sm">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Dibooking pada: {{ booking.created_at|date:"d M Y H:i" }}
+                        </span>
+                        {% if booking.updated_at != booking.created_at %}
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Diupdate: {{ booking.updated_at|date:"d M Y H:i" }}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -82,7 +128,10 @@
             <h3 class="text-2xl font-bold text-slate-800 mb-3">Belum ada booking</h3>
             <p class="text-slate-600 mb-6">Anda belum melakukan booking venue apapun.</p>
             <a href="{% url 'venue:home_section' %}" 
-               class="inline-block px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition font-semibold">
+               class="inline-flex items-center gap-2 px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition font-semibold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
                 Booking Sekarang
             </a>
         </div>
@@ -91,13 +140,130 @@
 </div>
 
 <!-- Toast Notifications -->
-<div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
-    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
+<div id="toast" class="fixed top-6 right-6 z-50 transition-all duration-300 transform translate-x-full" style="display: none;">
+    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold max-w-sm"></div>
+</div>
+
+<!-- Edit Booking Modal -->
+<div id="editBookingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditBookingModal()"></div>
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative z-10 transform transition-all duration-300 scale-95 opacity-0" id="editModalContent">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-800">Edit Booking</h3>
+            <button onclick="closeEditBookingModal()" class="text-slate-400 hover:text-slate-600 text-xl p-1 transition-colors">
+                ✕
+            </button>
+        </div>
+        
+        <form id="editBookingForm">
+            <input type="hidden" id="editBookingId">
+            <input type="hidden" id="editVenueId">
+            
+            <div class="space-y-4">
+                <!-- Venue Info -->
+                <div class="bg-slate-50 rounded-lg p-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 id="editVenueName" class="font-semibold text-slate-800">Loading venue...</h4>
+                            <p class="text-sm text-slate-600">Edit tanggal dan waktu booking</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Tanggal Booking</label>
+                    <input type="date" id="editBookingDate" 
+                           class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all"
+                           required>
+                    <p class="text-xs text-slate-500 mt-1">Pilih tanggal booking</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Waktu Mulai</label>
+                        <select id="editStartTime" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 transition-all" required>
+                            <option value="">Pilih Jam</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Waktu Selesai</label>
+                        <select id="editEndTime" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 transition-all" required>
+                            <option value="">Pilih Jam</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="editTimeError" class="bg-red-50 border border-red-200 rounded-lg p-3 hidden">
+                    <div class="flex items-center gap-2 text-red-700">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="editTimeErrorText" class="text-sm font-medium"></span>
+                    </div>
+                </div>
+                
+                <!-- Available Slots Info -->
+                <div id="editSlotsInfo" class="bg-blue-50 border border-blue-200 rounded-lg p-3 hidden">
+                    <div class="flex items-center gap-2 text-blue-700">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="editSlotsInfoText" class="text-sm"></span>
+                    </div>
+                </div>
+                
+                <div id="editPriceSummary" class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-slate-600">Durasi:</span>
+                        <span id="editDuration" class="font-semibold text-slate-800">0 jam</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">Harga per jam:</span>
+                        <span id="editPricePerHour" class="font-medium text-slate-700">Rp 0</span>
+                    </div>
+                    <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between items-center">
+                        <span class="text-sm font-medium text-slate-700">Total Harga:</span>
+                        <span id="editEstimatedPrice" class="font-semibold text-rose-600 text-lg">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeEditBookingModal()" 
+                        class="flex-1 py-2 px-4 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition font-medium">
+                    Batal
+                </button>
+                <button type="submit" id="submitEditBookingBtn"
+                        class="flex-1 py-2 px-4 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition font-semibold disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <svg id="editSubmitIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="editSubmitText">Simpan Perubahan</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-// Function untuk show toast notifications
+// Variables untuk edit booking
+let editAvailableSlots = [];
+let editVenuePrice = 0;
+let originalBookingData = {};
+
+function formatTimeDisplay(timeStr) {
+    const hour = parseInt(timeStr.split(':')[0]);
+    return `${hour.toString().padStart(2, '0')}:00`;
+}
+
+// Improved Toast Notification
 function showToast(title, message, type) {
     const toast = $('#toast');
     const inner = $('#toast-inner');
@@ -107,73 +273,493 @@ function showToast(title, message, type) {
                 : type === "info" ? "bg-blue-100 text-blue-800 border-blue-300"
                 : "bg-yellow-100 text-yellow-800 border-yellow-300";
 
-    inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
-    inner.html(`<strong>${title}</strong><br>${message}`);
-    toast.show();
+    const icon = type === "success" ? "✅"
+                : type === "error" ? "❌"
+                : type === "info" ? "ℹ️"
+                : "⚠️";
 
-    setTimeout(() => toast.hide(), 5000);
+    inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+    inner.html(`${icon} <strong>${title}</strong><br><span class="text-sm font-normal">${message}</span>`);
+    
+    toast.show().removeClass('translate-x-full').addClass('translate-x-0');
+
+    setTimeout(() => {
+        toast.addClass('translate-x-full');
+        setTimeout(() => toast.hide(), 300);
+    }, 5000);
 }
 
-// Handle cancel booking dengan AJAX
-$(document).ready(function() {
-    $('.cancel-booking-btn').on('click', function() {
-        const button = $(this);
-        const bookingId = button.data('booking-id');
-        const venueName = button.data('venue-name');
-        const bookingDate = button.data('booking-date');
-        
-        // Konfirmasi pembatalan
-        if (!confirm(`Apakah Anda yakin ingin membatalkan booking ${venueName} pada ${bookingDate}?`)) {
-            return;
-        }
-        
-        // Disable button dan show loading state
-        button.prop('disabled', true).text('Membatalkan...');
-        
-        // Kirim request AJAX
-        $.ajax({
-            url: `{% url 'venue:cancel_booking' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', bookingId),
-            method: 'POST',
-            data: {
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    showToast("Success!", response.message, "success");
-                    
-                    // Update UI - hapus atau update booking item
-                    const bookingItem = $(`[data-booking-id="${bookingId}"]`);
-                    
-                    // Update status badge
-                    bookingItem.find('.px-3.py-1').removeClass('bg-green-100 bg-yellow-100')
-                        .addClass('bg-red-100 text-red-800')
-                        .text('Cancelled');
-                    
-                    // Hapus tombol batalkan
-                    button.closest('.mt-4').remove();
-                    
-                    // Update teks status di badge
-                    bookingItem.find('.px-3.py-1').text('Dibatalkan');
-                    
-                } else {
-                    showToast("Error", response.message, "error");
-                    button.prop('disabled', false).text('Batalkan');
+// Function untuk update available slots untuk edit modal
+function updateEditAvailableSlots() {
+    const venueId = $('#editVenueId').val();
+    const bookingDate = $('#editBookingDate').val();
+    const currentBookingId = $('#editBookingId').val();
+    
+    if (!venueId || !bookingDate) {
+        return;
+    }
+    
+    // Show loading state
+    $('#editStartTime, #editEndTime').prop('disabled', true);
+    $('#editStartTime').html('<option value="">Memuat jam tersedia...</option>');
+    $('#editEndTime').html('<option value="">Memuat jam tersedia...</option>');
+    $('#editSlotsInfo').hide();
+    
+    const availabilityUrl = `{% url 'venue:get_venue_availability' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', venueId);
+    
+    $.ajax({
+        url: availabilityUrl,
+        method: 'GET',
+        data: {
+            'date': bookingDate,
+            'exclude_booking': currentBookingId // Exclude current booking dari konflik
+        },
+        success: function(response) {
+            editAvailableSlots = response.available_slots;
+            
+            // Update slots info
+            const totalSlots = response.all_slots.length;
+            const availableCount = editAvailableSlots.length;
+            const bookedCount = totalSlots - availableCount;
+            
+            if (bookedCount > 0) {
+                $('#editSlotsInfoText').text(`${availableCount} jam tersedia, ${bookedCount} jam sudah dibooking`);
+                $('#editSlotsInfo').show();
+            } else {
+                $('#editSlotsInfo').hide();
+            }
+            
+            // Update start time options
+            const startSelect = $('#editStartTime');
+            startSelect.empty().append('<option value="">Pilih Jam Mulai</option>');
+            
+            editAvailableSlots.forEach(slot => {
+                if (slot !== '22:00') {
+                    startSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
                 }
-            },
-            error: function(xhr, status, error) {
-                console.log('Cancel booking error:', xhr.responseText);
-                let errorMessage = "Terjadi kesalahan saat membatalkan booking";
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMessage = response.message || errorMessage;
-                } catch (e) {
-                    // Use default error message
+            });
+            
+            // Reset end time
+            const endSelect = $('#editEndTime');
+            endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+            
+            // Enable selects
+            $('#editStartTime, #editEndTime').prop('disabled', false);
+            
+            // Set original values jika masih available
+            if (originalBookingData.start_time && originalBookingData.end_time) {
+                const originalStart = originalBookingData.start_time;
+                const originalEnd = originalBookingData.end_time;
+                
+                if (editAvailableSlots.includes(originalStart)) {
+                    $('#editStartTime').val(originalStart);
+                    
+                    // Update end time options based on selected start time
+                    updateEditEndTimeOptions();
+                    
+                    if (editAvailableSlots.includes(originalEnd)) {
+                        $('#editEndTime').val(originalEnd);
+                    }
                 }
                 
-                showToast("Error", errorMessage, "error");
-                button.prop('disabled', false).text('Batalkan');
+                validateEditTime();
+                calculateEditBookingPrice();
             }
-        });
+        },
+        error: function(xhr) {
+            console.error('Error fetching availability for edit:', xhr);
+            $('#editStartTime, #editEndTime').prop('disabled', false);
+            showToast("Error", "Gagal memuat jam tersedia", "error");
+        }
+    });
+}
+
+// Function untuk update end time options
+function updateEditEndTimeOptions() {
+    const startTime = $('#editStartTime').val();
+    const endSelect = $('#editEndTime');
+    
+    if (!startTime) {
+        endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+        return;
+    }
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    endSelect.empty().append('<option value="">Pilih Jam Selesai</option>');
+    
+    // Filter available slots untuk end time (harus setelah start time)
+    editAvailableSlots.forEach(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        if (slotHour > startHour) {
+            // Check if all intermediate slots are available
+            let allSlotsAvailable = true;
+            for (let hour = startHour + 1; hour < slotHour; hour++) {
+                const intermediateSlot = `${hour.toString().padStart(2, '0')}:00`;
+                if (!editAvailableSlots.includes(intermediateSlot)) {
+                    allSlotsAvailable = false;
+                    break;
+                }
+            }
+            
+            if (allSlotsAvailable) {
+                endSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
+            }
+        }
+    });
+}
+
+// Function untuk validasi waktu di edit modal
+function validateEditTime() {
+    const startTime = $('#editStartTime').val();
+    const endTime = $('#editEndTime').val();
+    const timeError = $('#editTimeError');
+    const errorText = $('#editTimeErrorText');
+    
+    if (startTime && endTime) {
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        if (endHour <= startHour) {
+            errorText.text("Waktu selesai harus setelah waktu mulai");
+            timeError.show();
+            $('#submitEditBookingBtn').prop('disabled', true);
+            return false;
+        }
+        
+        // Check if all hours in between are available
+        for (let hour = startHour; hour < endHour; hour++) {
+            const slot = `${hour.toString().padStart(2, '0')}:00`;
+            if (!editAvailableSlots.includes(slot)) {
+                errorText.text("Ada jam dalam rentang waktu ini yang sudah dibooking oleh user lain");
+                timeError.show();
+                $('#submitEditBookingBtn').prop('disabled', true);
+                return false;
+            }
+        }
+        
+        timeError.hide();
+        $('#submitEditBookingBtn').prop('disabled', false);
+        return true;
+    }
+    
+    timeError.hide();
+    $('#submitEditBookingBtn').prop('disabled', true);
+    return false;
+}
+
+// Function untuk calculate price di edit modal
+function calculateEditBookingPrice() {
+    const startTime = $('#editStartTime').val();
+    const endTime = $('#editEndTime').val();
+    
+    if (startTime && endTime && validateEditTime()) {
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        let durationHours = endHour - startHour;
+        
+        if (durationHours > 0) {
+            const totalPrice = editVenuePrice * durationHours;
+            $('#editDuration').text(durationHours + ' jam');
+            $('#editPricePerHour').text('Rp ' + editVenuePrice.toLocaleString('id-ID'));
+            $('#editEstimatedPrice').text('Rp ' + totalPrice.toLocaleString('id-ID'));
+            return true;
+        }
+    }
+    
+    $('#editDuration').text('0 jam');
+    $('#editEstimatedPrice').text('Rp 0');
+    return false;
+}
+
+// Modal functions untuk edit booking
+function openEditBookingModal(bookingId) {
+    // Reset form
+    $('#editBookingForm')[0].reset();
+    $('#editTimeError').hide();
+    $('#editSlotsInfo').hide();
+    $('#submitEditBookingBtn').prop('disabled', true);
+    
+    // Set minimum date to today dengan timezone yang benar
+    const today = new Date();
+    const timezoneOffset = today.getTimezoneOffset() * 60000;
+    const localDate = new Date(today - timezoneOffset);
+    const todayFormatted = localDate.toISOString().split('T')[0];
+    
+    $('#editBookingDate').attr('min', todayFormatted);
+    
+    // Show loading state
+    $('#editVenueName').text('Memuat data booking...');
+    
+    // Load booking details
+    const detailsUrl = `{% url 'venue:get_booking_details' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', bookingId);
+    
+    $.ajax({
+        url: detailsUrl,
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const booking = response.booking;
+                
+                $('#editBookingId').val(booking.id);
+                $('#editVenueId').val(booking.venue_id);
+                $('#editVenueName').text(booking.venue_name);
+                $('#editBookingDate').val(booking.booking_date);
+                
+                // Store original booking data
+                originalBookingData = {
+                    start_time: booking.start_time,
+                    end_time: booking.end_time,
+                    booking_date: booking.booking_date
+                };
+                
+                // Get venue price
+                editVenuePrice = booking.venue_price_per_hour;
+                $('#editPricePerHour').text('Rp ' + editVenuePrice.toLocaleString('id-ID'));
+                
+                // Load availability untuk tanggal booking
+                updateEditAvailableSlots();
+                
+                // Show modal with animation
+                $('#editBookingModal').show();
+                setTimeout(() => {
+                    $('#editModalContent').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 50);
+                
+                document.body.style.overflow = 'hidden';
+            } else {
+                showToast("Error", "Gagal memuat data booking", "error");
+            }
+        },
+        error: function(xhr) {
+            showToast("Error", "Terjadi kesalahan saat memuat data booking", "error");
+        }
+    });
+}
+
+function closeEditBookingModal() {
+    $('#editModalContent').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+    setTimeout(() => {
+        $('#editBookingModal').hide();
+        document.body.style.overflow = '';
+        editAvailableSlots = [];
+        editVenuePrice = 0;
+        originalBookingData = {};
+    }, 300);
+}
+
+// Handle edit booking form submission - AJAX IMPLEMENTATION
+$('#editBookingForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const bookingId = $('#editBookingId').val();
+    const bookingDate = $('#editBookingDate').val();
+    const startTime = $('#editStartTime').val();
+    const endTime = $('#editEndTime').val();
+    
+    if (!validateEditTime()) {
+        showToast("Error", "Waktu booking tidak valid", "error");
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = $('#submitEditBookingBtn');
+    const submitText = $('#editSubmitText');
+    const submitIcon = $('#editSubmitIcon');
+    
+    submitBtn.prop('disabled', true);
+    submitText.text('Menyimpan...');
+    submitIcon.hide();
+    
+    const editUrl = `{% url 'venue:edit_booking' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', bookingId);
+    
+    $.ajax({
+        url: editUrl,
+        method: 'POST',
+        data: {
+            'booking_date': bookingDate,
+            'start_time': startTime,
+            'end_time': endTime,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast("Sukses!", response.message, "success");
+                
+                // Close modal
+                closeEditBookingModal();
+                
+                // Update UI tanpa reload halaman
+                updateBookingUI(bookingId, response);
+                
+            } else {
+                showToast("Error", response.message, "error");
+                
+                // Reset button state
+                submitBtn.prop('disabled', false);
+                submitText.text('Simpan Perubahan');
+                submitIcon.show();
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = "Terjadi kesalahan sistem";
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            
+            showToast("Error", errorMessage, "error");
+            
+            // Reset button state
+            submitBtn.prop('disabled', false);
+            submitText.text('Simpan Perubahan');
+            submitIcon.show();
+        }
+    });
+});
+
+// Function untuk update UI setelah edit berhasil
+function updateBookingUI(bookingId, response) {
+    const bookingItem = $(`[data-booking-id="${bookingId}"]`);
+    
+    // Update tanggal
+    bookingItem.find('.bg-slate-50:eq(0) p').text(response.booking_date);
+    
+    // Update waktu
+    bookingItem.find('.bg-slate-50:eq(1) p').text(`${response.start_time} - ${response.end_time}`);
+    
+    // Update durasi
+    const durationHours = response.duration_hours;
+    bookingItem.find('.bg-slate-50:eq(2) p').text(`${durationHours} jam`);
+    
+    // Update harga
+    bookingItem.find('.bg-slate-50:eq(3) p').text(`Rp ${response.total_price.toLocaleString('id-ID')}`);
+    
+    // Update timestamp
+    const now = new Date();
+    const formattedTime = now.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    if (!bookingItem.find('.flex.items-center.gap-1:contains("Diupdate")').length) {
+        bookingItem.find('.flex.items-center.justify-between').append(`
+            <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Diupdate: ${formattedTime}
+            </span>
+        `);
+    } else {
+        bookingItem.find('.flex.items-center.gap-1:contains("Diupdate")').html(`
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Diupdate: ${formattedTime}
+        `);
+    }
+}
+
+// Handle cancel booking - AJAX IMPLEMENTATION
+function cancelBooking(bookingId, venueName, bookingDate) {
+    if (!confirm(`Apakah Anda yakin ingin membatalkan booking "${venueName}" pada ${bookingDate}?`)) {
+        return;
+    }
+    
+    const button = $(`.cancel-booking-btn[data-booking-id="${bookingId}"]`);
+    const originalText = button.html();
+    
+    // Show loading state
+    button.prop('disabled', true);
+    button.html(`
+        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v4m0 12v4m8-10h-4M6 12H2m15.364-7.364l-2.828 2.828M7.464 17.536l-2.828 2.828m0-12.728l2.828 2.828m9.168 9.168l2.828 2.828"/>
+        </svg>
+        Membatalkan...
+    `);
+    
+    const cancelUrl = `{% url 'venue:cancel_booking' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', bookingId);
+    
+    $.ajax({
+        url: cancelUrl,
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast("Sukses!", response.message, "success");
+                
+                // Update UI tanpa reload halaman
+                updateCancelBookingUI(bookingId);
+                
+            } else {
+                showToast("Error", response.message, "error");
+                button.prop('disabled', false).html(originalText);
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = "Terjadi kesalahan saat membatalkan booking";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMessage = response.message || errorMessage;
+            } catch (e) {
+                // Use default error message
+            }
+            showToast("Error", errorMessage, "error");
+            button.prop('disabled', false).html(originalText);
+        }
+    });
+}
+
+// Function untuk update UI setelah cancel berhasil
+function updateCancelBookingUI(bookingId) {
+    const bookingItem = $(`[data-booking-id="${bookingId}"]`);
+    
+    // Update status
+    bookingItem.find('.px-3.py-1')
+        .removeClass('bg-green-100 bg-yellow-100 text-green-800 text-yellow-800 border-green-200 border-yellow-200')
+        .addClass('bg-red-100 text-red-800 border-red-200')
+        .text('Dibatalkan');
+    
+    // Remove action buttons
+    bookingItem.find('.flex.gap-2').remove();
+}
+
+// Event listeners untuk edit modal
+$('#editBookingDate').on('change', function() {
+    updateEditAvailableSlots();
+    calculateEditBookingPrice();
+});
+
+$('#editStartTime').on('change', function() {
+    updateEditEndTimeOptions();
+    validateEditTime();
+    calculateEditBookingPrice();
+});
+
+$('#editEndTime').on('change', function() {
+    validateEditTime();
+    calculateEditBookingPrice();
+});
+
+// Initialize semua event handlers
+$(document).ready(function() {
+    // Edit booking buttons
+    $(document).on('click', '.edit-booking-btn', function() {
+        const bookingId = $(this).data('booking-id');
+        openEditBookingModal(bookingId);
+    });
+    
+    // Cancel booking buttons
+    $(document).on('click', '.cancel-booking-btn', function() {
+        const bookingId = $(this).data('booking-id');
+        const venueName = $(this).data('venue-name');
+        const bookingDate = $(this).data('booking-date');
+        cancelBooking(bookingId, venueName, bookingDate);
     });
 });
 </script>

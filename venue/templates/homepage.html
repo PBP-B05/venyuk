@@ -9,9 +9,8 @@
 {% include 'navbar.html' %}
 
 <div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
-  <!-- Hero Section -->
   <section class="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white"
-          style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static 'images/banner_homepage.jpg' %});">
+       style="background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url({% static 'images/banner_homepage.jpg' %});">
     <div class="px-6">
       <h1 class="text-5xl sm:text-6xl font-extrabold mb-4 tracking-tight">BOOKING VENUE di VenYuk!</h1>
       <p class="text-lg sm:text-xl text-slate-200 mb-6">Temukan dan booking venue olahraga terbaik dengan mudah</p>
@@ -22,7 +21,6 @@
     </div>
   </section>
 
-  <!-- Filter Section -->
   <div class="max-w-7xl mx-auto mt-10 mb-12 px-6">
     <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-slate-200 px-5 py-6">
       <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
@@ -47,21 +45,18 @@
     </div>
   </div>
 
-  <!-- Venues Section -->
   <div class="max-w-7xl mx-auto px-6 pb-20" id="venues">
     {% if venues %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="venues-container">
         {% for venue in venues %}
           <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
-            <!-- Gambar Venue -->
-            {% if venue.thumbnail %}
-                <img src="{{ venue.thumbnail }}" alt="{{ venue.name }}" class="w-full h-56 object-cover">
+            {% if venue.get_image_url %}
+                <img src="{{ venue.get_image_url }}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
             {% else %}
-                <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover">
+                <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
             {% endif %}
 
             <div class="p-5">
-              <!-- Multiple Categories Tags -->
               <div class="flex flex-wrap gap-1 mb-2">
                 {% for category in venue.get_categories_display_list %}
                   <span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">
@@ -70,10 +65,8 @@
                 {% endfor %}
               </div>
 
-                <!-- Nama Venue -->
                 <h3 class="text-lg font-semibold text-slate-900 mb-1">{{ venue.name }}</h3>
 
-                <!-- Rating dan Alamat -->
                 <div class="flex items-center text-slate-600 mb-2">
                     <span class="text-yellow-500 me-1">★</span>
                     <span class="font-semibold text-dark me-2">{{ venue.rating|floatformat:1 }}</span>
@@ -82,17 +75,15 @@
                     {% endif %}
                 </div>
 
-                <!-- Harga -->
                 <div class="flex items-center justify-between mb-4">
                     <span class="text-rose-600 font-semibold">Rp {{ venue.price|floatformat:0 }}</span>
                     <span class="text-sm text-slate-500">/ jam</span>
                 </div>
 
-                <!-- Tombol Booking -->
                 <button class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-md font-semibold transition book-venue-btn"
                         onclick="bookVenue('{{ venue.id }}', {{ venue.price }})"
                         {% if not venue.is_available %}disabled style="background-color: #d1d5db; color: #6b7280; cursor: not-allowed;"{% endif %}>
-                    {% if venue.is_available %}Book Now{% else %}Not Available{% endif %}
+                  {% if venue.is_available %}Book Now{% else %}Not Available{% endif %}
                 </button>
             </div>
           </div>
@@ -110,12 +101,10 @@
   </div>
 </div>
 
-<!-- Toast Notifications -->
 <div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
     <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
 </div>
 
-<!-- Booking Modal -->
 <div id="bookingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeBookingModal()"></div>
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative z-10">
@@ -153,19 +142,16 @@
                     </div>
                 </div>
                 
-                <!-- Error Message -->
                 <div id="timeError" class="text-red-600 text-sm hidden">
                     ⚠️ Waktu selesai harus setelah waktu mulai
                 </div>
-                
-                <div id="bookingMeta" data-price-per-hour="{{ venue.price }}" style="display:none"></div>
 
                 <div class="mb-3">
                 <label for="promo_code" class="block text-sm font-medium text-gray-700">Kode Promo</label>
                 <div class="flex mt-1">
                     <input type="text" id="promo_code" name="promo_code"
-                        class="border rounded-l-md px-3 py-2 w-full"
-                        placeholder="Masukkan kode promo">
+                           class="border rounded-l-md px-3 py-2 w-full"
+                           placeholder="Masukkan kode promo">
                     <button type="button" id="apply_promo"
                             class="bg-rose-600 text-white px-4 py-2 rounded-r-md hover:bg-rose-700">
                     Terapkan
@@ -173,7 +159,7 @@
                 </div>
                 <p id="promo_message" class="text-sm mt-2"></p>
                 </div>
-
+                
                 <div id="priceSummary" class="bg-slate-50 rounded-lg p-4 hidden">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-slate-600">Durasi:</span>
@@ -185,8 +171,8 @@
                         </div>
                     </div>
                 </div>
-                </div>
-                            
+            </div>
+            
             <div class="flex gap-3 mt-6">
                 <button type="button" onclick="closeBookingModal()" 
                         class="flex-1 py-2 px-4 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition">
@@ -207,8 +193,12 @@ let currentVenuePrice = 0;
 let currentVenueId = '';
 let currentVenueName = '';
 let availableSlots = [];
-let currentDiscountPercent = 0;
+let currentDiscountPercent = 0; // [DARI FILE 1] Ditambahkan
 
+function formatTimeDisplay(timeStr) {
+    const hour = parseInt(timeStr.split(':')[0]);
+    return `${hour.toString().padStart(2, '0')}:00`;
+}
 // Function untuk generate jam options dengan validasi
 function generateTimeOptions() {
     const startSelect = $('#startTime');
@@ -222,7 +212,7 @@ function generateTimeOptions() {
     for (let i = 7; i <= 22; i++) {
         const hour = i.toString().padStart(2, '0');
         const timeValue = `${hour}:00`;
-        const timeDisplay = `${hour}:00`;
+        const timeDisplay = formatTimeDisplay(timeValue);
         
         startSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
         if (i > 7) { // End time options mulai dari jam 8
@@ -263,7 +253,7 @@ function updateAvailableSlots() {
             // Untuk start time, semua slot available kecuali yang terakhir (22:00)
             availableSlots.forEach(slot => {
                 if (slot !== '22:00') { // 22:00 tidak bisa jadi start time
-                    startSelect.append(`<option value="${slot}">${slot}</option>`);
+                    startSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
                 }
             });
             
@@ -319,7 +309,7 @@ function updateEndTimeOptions() {
             }
             
             if (allIntermediateSlotsAvailable) {
-                endSelect.append(`<option value="${slot}">${slot}</option>`);
+                endSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
             }
         }
     });
@@ -386,29 +376,43 @@ function openBookingModal(venueId, venuePrice, venueName = '') {
     currentVenuePrice = venuePrice;
     currentVenueId = venueId;
     currentVenueName = venueName;
-    currentDiscountPercent = 0;
     $('#bookingVenueId').val(venueId);
     
+    // [DARI FILE 1] Reset Promo ditambahkan
+    currentDiscountPercent = 0; 
+
+    // Reset form
     $('#bookingForm')[0].reset();
     $('#priceSummary').hide();
     $('#timeError').hide();
     $('#submitBookingBtn').prop('disabled', true).text('Booking Sekarang');
     
+    // [DARI FILE 1] Reset Promo fields ditambahkan
     $('#promo_code').val('');
     $('#promo_message').text('').removeClass('text-green-600 text-red-600');
-    
     $('#priceDisplay').html('<span class="font-semibold text-rose-600 text-lg">Rp 0</span>');
+
+    // PERBAIKAN: Set minimum date to tomorrow (H+1)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1); // Tambah 1 hari
     
-    const today = new Date().toISOString().split('T')[0];
-    $('#bookingDate').attr('min', today);
-    $('#bookingDate').val(today);
+    const timezoneOffset = tomorrow.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localDate = new Date(tomorrow - timezoneOffset);
+    const tomorrowFormatted = localDate.toISOString().split('T')[0];
     
+    $('#bookingDate').attr('min', tomorrowFormatted);
+    $('#bookingDate').val(tomorrowFormatted);
+    
+    // Generate default time options
     generateTimeOptions();
     
+    // Load availability for tomorrow
     setTimeout(() => {
         updateAvailableSlots();
     }, 100);
     
+    // Show modal
     $('#bookingModal').show();
     document.body.style.overflow = 'hidden';
 }
@@ -420,8 +424,10 @@ function closeBookingModal() {
     currentVenueId = '';
     currentVenueName = '';
     availableSlots = [];
+    currentDiscountPercent = 0; // [DARI FILE 1] Reset Promo
 }
 
+// [DARI FILE 1] Fungsi calculateBookingPrice DIGANTI TOTAL
 function calculateBookingPrice() {
     const startTime = $('#startTime').val();
     const endTime = $('#endTime').val();
@@ -495,6 +501,7 @@ function filterVenues() {
     });
 }
 
+// Ini adalah fungsi updateVenues yang BENAR dari file teman Anda
 function updateVenues(venues) {
     const container = $('#venues-container');
     container.empty();
@@ -515,18 +522,46 @@ function updateVenues(venues) {
             ? 'bg-rose-600 hover:bg-rose-700 text-white' 
             : 'bg-gray-300 text-gray-500 cursor-not-allowed';
         const buttonText = isAvailable ? 'Book Now' : 'Not Available';
-        const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price})` : '';
+        const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price}, '${venue.name.replace(/'/g, "\\'")}')` : '';
 
+        // Handle category tags
         const categoryTags = venue.categories_list && venue.categories_list.length > 0 
             ? venue.categories_list.map(cat => 
                 `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${cat}</span>`
               ).join('')
             : `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">General</span>`;
 
+        // Handle image URL - prioritize get_image_url, then image_url, then thumbnail, then placeholder
+        let imageUrl = '';
+        if (venue.get_image_url) {
+            imageUrl = venue.get_image_url;
+        } else if (venue.image_url) {
+            imageUrl = venue.image_url;
+        } else if (venue.thumbnail) {
+            imageUrl = venue.thumbnail;
+        } else {
+            imageUrl = '{% static 'images/placeholder.png' %}';
+        }
+
+        // Handle address truncation
+        const displayAddress = venue.address ? 
+            (venue.address.length > 30 ? venue.address.substring(0, 30) + '...' : venue.address) : 
+            'Alamat tidak tersedia';
+
+        // Format rating to 1 decimal place
+        const displayRating = typeof venue.rating === 'number' ? venue.rating.toFixed(1) : '0.0';
+
+        // Format price with Indonesian locale
+        const displayPrice = typeof venue.price === 'number' ? 
+            venue.price.toLocaleString('id-ID') : '0';
+
         container.append(`
             <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
-                <img src="${venue.thumbnail || '{% static 'images/placeholder.png' %}'}"
-                     class="w-full h-56 object-cover" alt="${venue.name}" loading="lazy">
+                <img src="${imageUrl}"
+                     class="w-full h-56 object-cover" 
+                     alt="${venue.name}"
+                     loading="lazy"
+                     onerror="this.onerror=null; this.src='{% static 'images/placeholder.png' %}'">
                 <div class="p-5">
                     <div class="flex flex-wrap gap-1 mb-2">
                         ${categoryTags}
@@ -534,21 +569,30 @@ function updateVenues(venues) {
                     <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
                     <div class="flex items-center text-slate-600 mb-2">
                         <span class="text-yellow-500 me-1">★</span>
-                        <span class="font-semibold me-2">${venue.rating}</span>
-                        <span class="text-slate-500 text-sm">• ${venue.address ? (venue.address.length > 30 ? venue.address.substring(0, 30) + '...' : venue.address) : ''}</span>
+                        <span class="font-semibold me-2">${displayRating}</span>
+                        <span class="text-slate-500 text-sm">• ${displayAddress}</span>
                     </div>
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-rose-600 font-semibold">Rp ${venue.price.toLocaleString('id-ID')}</span>
+                        <span class="text-rose-600 font-semibold">Rp ${displayPrice}</span>
                         <span class="text-sm text-slate-500">/ jam</span>
                     </div>
-                    <button class="w-full ${buttonClass} py-2 rounded-md font-semibold transition"
-                            onclick="${onClick}">
+                    <button class="w-full ${buttonClass} py-2 rounded-md font-semibold transition duration-200 transform hover:scale-105"
+                            onclick="${onClick}"
+                            ${!isAvailable ? 'disabled' : ''}>
                         ${buttonText}
                     </button>
                 </div>
             </div>
         `);
     });
+
+    // Add image error handling for all venue images
+    setTimeout(() => {
+        $('.venue-card img').on('error', function() {
+            console.log('Image failed to load, using placeholder:', this.src);
+            $(this).attr('src', '{% static 'images/placeholder.png' %}');
+        });
+    }, 100);
 }
 
 function showToast(title, message, type) {
@@ -556,9 +600,9 @@ function showToast(title, message, type) {
     const inner = $('#toast-inner');
 
     const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
-                : type === "error" ? "bg-red-100 text-red-800 border-red-300"
-                : type === "info" ? "bg-blue-100 text-blue-800 border-blue-300"
-                : "bg-yellow-100 text-yellow-800 border-yellow-300";
+                  : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+                  : type === "info" ? "bg-blue-100 text-blue-800 border-blue-300"
+                  : "bg-yellow-100 text-yellow-800 border-yellow-300";
 
     inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
     inner.html(`<strong>${title}</strong><br>${message}`);
@@ -624,7 +668,7 @@ $(document).ready(function() {
             'booking_date': bookingDate,
             'start_time': startTime, 
             'end_time': endTime,
-            'promo_code': $('#promo_code').val().trim(),
+            'promo_code': $('#promo_code').val().trim(), // [DARI FILE 1] Ditambahkan
             'csrfmiddlewaretoken': '{{ csrf_token }}'
         },
         success: function(response) {
@@ -670,50 +714,54 @@ $(document).ready(function() {
     });
 });
 
+// [DARI FILE 1] Event listener untuk tombol promo DITAMBAHKAN
 document.addEventListener("DOMContentLoaded", () => {
     const promoBtn = document.getElementById("apply_promo");
     const promoInput = document.getElementById("promo_code");
     const promoMsg = document.getElementById("promo_message");
 
-    promoBtn.addEventListener("click", () => {
-        const code = promoInput.value.trim();
+    // Pastikan elemen ada sebelum menambahkan listener
+    if (promoBtn) {
+        promoBtn.addEventListener("click", () => {
+            const code = promoInput.value.trim();
 
-        if (!code) {
-            promoMsg.textContent = "Kode Promo tidak valid!";
-            promoMsg.className = "text-sm text-red-600";
-            currentDiscountPercent = 0;
-            calculateBookingPrice();
-            return;
-        }
-        
-        fetch("{% url 'promo:promo-validate' %}", {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": "{{ csrf_token }}",
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `promo_code=${encodeURIComponent(code)}&promo_type=venue`
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.valid) {
-                currentDiscountPercent = data.amount_discount;
-                promoMsg.textContent = data.message;
-                promoMsg.className = "text-sm text-green-600";
-            } else {
-                currentDiscountPercent = 0;
-                promoMsg.textContent = data.message || "Kode Promo tidak valid!";
+            if (!code) {
+                promoMsg.textContent = "Kode Promo tidak valid!";
                 promoMsg.className = "text-sm text-red-600";
+                currentDiscountPercent = 0;
+                calculateBookingPrice();
+                return;
             }
-            calculateBookingPrice();
-        })
-        .catch(() => {
-            currentDiscountPercent = 0;
-            promoMsg.textContent = "Terjadi kesalahan. Coba lagi.";
-            promoMsg.className = "text-sm text-red-600";
-            calculateBookingPrice();
+            
+            fetch("{% url 'promo:promo-validate' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `promo_code=${encodeURIComponent(code)}&promo_type=venue`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    currentDiscountPercent = data.amount_discount;
+                    promoMsg.textContent = data.message;
+                    promoMsg.className = "text-sm text-green-600";
+                } else {
+                    currentDiscountPercent = 0;
+                    promoMsg.textContent = data.message || "Kode Promo tidak valid!";
+                    promoMsg.className = "text-sm text-red-600";
+                }
+                calculateBookingPrice();
+            })
+            .catch(() => {
+                currentDiscountPercent = 0;
+                promoMsg.textContent = "Terjadi kesalahan. Coba lagi.";
+                promoMsg.className = "text-sm text-red-600";
+                calculateBookingPrice();
+            });
         });
-    });
+    }
 });
 </script>
 

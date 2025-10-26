@@ -1,15 +1,17 @@
+import random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
-from django.db import IntegrityError, transaction
+import json
 from datetime import datetime, date, time
 from .models import Venue, Booking
 from promo.models import Promo
 from django.utils import timezone
 from datetime import datetime, date
+from django.db import IntegrityError, transaction
 
 # ==============================================================
 # AVAILABILITY CHECK API
@@ -80,7 +82,18 @@ def landing_page(request):
     """Public landing page before login"""
     if request.user.is_authenticated:
         return redirect('venue:home_section')
-    return render(request, 'landing_page.html')
+    
+    # Get venues with images (either thumbnail or image_url)
+    venues_with_images = Venue.objects.filter(
+        Q(thumbnail__isnull=False) | Q(image_url__isnull=False)
+    ).distinct()
+    
+    random_venues = random.sample(list(venues_with_images), min(4, len(venues_with_images)))
+    
+    context = {
+        'random_venues': random_venues,
+    }
+    return render(request, 'landing_page.html', context)
 
 # ==============================================================
 # HELPER FUNCTIONS
@@ -151,6 +164,8 @@ def home_section(request):
             'rating': float(venue.rating),
             'address': venue.address,
             'thumbnail': venue.thumbnail.url if venue.thumbnail else None,
+            'image_url': venue.image_url,  # ADD THIS LINE
+            'get_image_url': venue.get_image_url(),  # ADD THIS LINE - use the model method
             'is_available': venue.is_available
         } for venue in venues]
         return JsonResponse({'venues': data})
@@ -279,11 +294,16 @@ def book_venue(request, venue_id):
             return JsonResponse({'success': False, 'message': f'Terjadi kesalahan saat menyimpan booking: {str(e)}'}, status=500)
         
     return JsonResponse({'success': False, 'message': 'Metode request tidak valid.'}, status=405)
-
+    
 @login_required
 def my_bookings(request):
     """Menampilkan booking history user"""
     bookings = Booking.objects.filter(user=request.user).select_related('venue').order_by('-created_at')
+    
+    # Add image URL to each booking for template
+    for booking in bookings:
+        booking.venue_image_url = booking.venue.get_image_url()
+    
     return render(request, 'my_bookings.html', {'bookings': bookings})
 
 # ==============================================================
@@ -343,11 +363,225 @@ def cancel_booking(request, booking_id):
 def get_venues_json(request):
     """Return all venues as JSON"""
     venues = Venue.objects.filter(is_available=True)
-    data = serializers.serialize('json', venues)
-    return HttpResponse(data, content_type='application/json')
+    data = []
+    for venue in venues:
+        data.append({
+            'id': str(venue.id),
+            'name': venue.name,
+            'category': venue.category,
+            'address': venue.address,
+            'price': venue.price,
+            'rating': venue.rating,
+            'image_url': venue.get_image_url(),  # Use the method to get image
+            'is_available': venue.is_available
+        })
+    return JsonResponse(data, safe=False)
 
 def get_venue_by_id(request, id):
     """Return specific venue as JSON"""
     venue = get_object_or_404(Venue, pk=id)
-    data = serializers.serialize('json', [venue])
-    return HttpResponse(data, content_type='application/json')
+    data = {
+        'id': str(venue.id),
+        'name': venue.name,
+        'category': venue.category,
+        'address': venue.address,
+        'price': venue.price,
+        'rating': venue.rating,
+        'image_url': venue.get_image_url(),  # Use the method to get image
+        'is_available': venue.is_available
+    }
+    return JsonResponse(data)
+
+# ==============================================================
+# EDIT BOOKING - IMPROVED VERSION
+# ==============================================================
+
+@login_required
+@csrf_exempt
+def edit_booking(request, booking_id):
+    """Edit booking dengan validasi konflik yang lebih baik"""
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid request method'
+        }, status=405)
+    
+    try:
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        
+        # Hanya bisa edit booking yang masih pending/confirmed
+        if booking.status not in ['pending', 'confirmed']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Tidak bisa mengedit booking yang sudah dibatalkan atau selesai'
+            }, status=400)
+        
+        # Gunakan request.POST langsung
+        booking_date_str = request.POST.get('booking_date')
+        start_time_str = request.POST.get('start_time')
+        end_time_str = request.POST.get('end_time')
+        
+        # Validasi data input
+        if not all([booking_date_str, start_time_str, end_time_str]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Semua field harus diisi'
+            }, status=400)
+        
+        # Parse dates and times
+        try:
+            booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
+            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Format tanggal atau waktu tidak valid: {str(e)}'
+            }, status=400)
+        
+        # Validasi tanggal tidak boleh di masa lalu
+        today = date.today()
+        if booking_date < today:
+            return JsonResponse({
+                'success': False,
+                'message': 'Tidak bisa booking untuk tanggal yang sudah lewat'
+            }, status=400)
+        
+        # Validasi khusus: jika booking date sama dengan hari ini, cek waktu
+        if booking_date == today:
+            now = datetime.now().time()
+            if start_time <= now:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Tidak bisa booking untuk waktu yang sudah lewat pada hari ini'
+                }, status=400)
+        
+        # Validasi waktu selesai harus setelah waktu mulai
+        if end_time <= start_time:
+            return JsonResponse({
+                'success': False,
+                'message': 'Waktu selesai harus setelah waktu mulai'
+            }, status=400)
+        
+        # Validasi durasi minimal 1 jam
+        start_dt = datetime.combine(date.today(), start_time)
+        end_dt = datetime.combine(date.today(), end_time)
+        duration_hours = (end_dt - start_dt).seconds / 3600
+        
+        if duration_hours < 1:
+            return JsonResponse({
+                'success': False,
+                'message': 'Durasi booking minimal 1 jam'
+            }, status=400)
+        
+        # Validasi durasi maksimal 12 jam
+        if duration_hours > 12:
+            return JsonResponse({
+                'success': False,
+                'message': 'Durasi booking maksimal 12 jam'
+            }, status=400)
+        
+        # CEK KONFLIK DENGAN USER LAIN - PERBAIKAN UTAMA
+        conflicting_bookings = Booking.objects.filter(
+            venue=booking.venue,
+            booking_date=booking_date,
+            status__in=['pending', 'confirmed'],
+            start_time__lt=end_time,
+            end_time__gt=start_time
+        ).exclude(id=booking.id)  # Exclude current booking
+        
+        # Filter hanya konflik dengan user lain
+        other_users_conflicts = conflicting_bookings.exclude(user=request.user)
+        
+        if other_users_conflicts.exists():
+            conflict = other_users_conflicts.first()
+            conflict_time = f"{conflict.start_time.strftime('%H:%M')} - {conflict.end_time.strftime('%H:%M')}"
+            
+            return JsonResponse({
+                'success': False,
+                'message': f'Venue sudah dibooking oleh user lain pada jam {conflict_time}. Silakan pilih waktu lain.'
+            }, status=400)
+        
+        # Hitung total harga baru
+        total_price = int(booking.venue.price * duration_hours)
+        
+        # Simpan info booking lama untuk response
+        old_booking_info = {
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d'),
+            'start_time': booking.start_time.strftime('%H:%M'),
+            'end_time': booking.end_time.strftime('%H:%M'),
+            'total_price': booking.total_price
+        }
+        
+        # Update booking
+        booking.booking_date = booking_date
+        booking.start_time = start_time
+        booking.end_time = end_time
+        booking.total_price = total_price
+        booking.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Booking {booking.venue.name} berhasil diupdate!',
+            'booking_id': str(booking.id),
+            'venue_name': booking.venue.name,
+            'booking_date': booking_date_str,
+            'start_time': start_time_str,
+            'end_time': end_time_str,
+            'total_price': total_price,
+            'duration_hours': duration_hours,
+            'old_booking_info': old_booking_info
+        })
+        
+    except Exception as e:
+        print(f"ERROR in edit_booking: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan sistem: {str(e)}'
+        }, status=500)
+
+@login_required
+def get_booking_details(request, booking_id):
+    """Get booking details untuk form edit dengan informasi tambahan"""
+    try:
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        
+        # Get venue price per hour untuk kalkulasi
+        venue_price_per_hour = booking.venue.price
+        
+        return JsonResponse({
+            'success': True,
+            'booking': {
+                'id': str(booking.id),
+                'venue_id': str(booking.venue.id),
+                'venue_name': booking.venue.name,
+                'booking_date': booking.booking_date.strftime('%Y-%m-%d'),
+                'start_time': booking.start_time.strftime('%H:%M'),
+                'end_time': booking.end_time.strftime('%H:%M'),
+                'total_price': booking.total_price,
+                'status': booking.status,
+                'venue_price_per_hour': venue_price_per_hour,
+                'duration_hours': booking.get_duration_hours(),
+                'venue_image_url': booking.venue.get_image_url()  # ADD THIS LINE
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        }, status=500)
+
+# ==============================================================
+# VENUE DETAIL VIEW
+# ==============================================================
+
+@login_required
+def venue_detail(request, venue_id):
+    """Detail view for individual venue"""
+    venue = get_object_or_404(Venue, id=venue_id)
+    
+    context = {
+        'venue': venue,
+        'image_url': venue.get_image_url(),  # Use the method
+    }
+    return render(request, 'venue_detail.html', context)
