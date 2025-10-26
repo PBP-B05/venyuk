@@ -40,6 +40,16 @@ def register(request):
                         "message": "Registration successful!"
                     })
                 return redirect('authenticate:login')
+        else:
+            # ADD THIS PART 👇
+            errors = form.errors.as_json()
+            print("Registration errors:", errors)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Invalid form submission.",
+                    "errors": errors
+                }, status=400)
     else:
         form = UserCreationForm()
 
@@ -53,32 +63,47 @@ def register(request):
 
 @csrf_exempt
 def login_user(request):
-    """Handle user login via AJAX"""
+    """Handle user login"""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+
+        print("Received username:", username)
+        print("Received password:", password)
+
+        if not username or not password:
+            messages.error(request, "Please fill in both username and password.")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Please fill in both username and password."
+                }, status=400)
+            return render(request, 'authenticate/login.html')
+
         user = authenticate(request, username=username, password=password)
-        
+        print("Authenticate result:", user)
+
         if user is not None:
             login(request, user)
-            response = JsonResponse({
-                "status": True,
-                "message": "Successfully logged in!",
-                "username": user.username
-            })
+            response = HttpResponseRedirect(reverse("venue:home_section"))
             response.set_cookie('last_login', str(datetime.datetime.now()))
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": True,
+                    "message": "Successfully logged in!"
+                })
             return response
         else:
-            return JsonResponse({
-                "status": False,
-                "message": "Invalid username or password."
-            }, status=401)
+            messages.error(request, 'Invalid username or password.')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Invalid username or password."
+                }, status=401)
+    
+    return render(request, 'authenticate/login.html')
 
-    # tidak render login.html lagi
-    return JsonResponse({
-        "status": False,
-        "message": "Invalid request method."
-    }, status=400)
 
 # ==============================================================
 # LOGOUT

@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
-<html>
 {% block meta %}
 <title>VenYuk! - Sewa Lapangan & Temukan Komunitas Olahraga</title>
 {% endblock meta %}
 
 {% block content %}
 {% include 'navbar.html' %}
-{% include 'modal.html' %}
 
 <!-- Hero Section -->
 <section class="relative min-h-[80vh] md:h-[90vh] flex items-center overflow-hidden">
@@ -47,6 +45,7 @@
   </div>
 </section>
 
+
 <!-- SEWA LAPANGAN SECTION -->
 <section id="venue" class="py-16 bg-white">
   <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
@@ -54,18 +53,17 @@
     <div>
       <h2 class="text-3xl font-bold text-rose-700 mb-4">Sewa lapangan dengan mudah dan cepat.</h2>
       <p class="text-gray-700 text-lg mb-6">
-        Ada rencana berolahraga minggu ini tapi belum tahu mau main di mana? Atau tidak sempat jauh-jauh datang ke venue hanya untuk booking lapangan?
-        Yuk sewa venue!
+        Ada rencana berolahraga minggu ini tapi belum tahu mau main di mana? Atau tidak sempat jauh-jauh datang ke venue hanya untuk booking lapangan? Yuk sewa venue!
       </p>
       <a href="{% url 'venue:home_section' %}"
          class="inline-block bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-full transition">
-         Lihat Venue
+        Lihat Venue
       </a>
     </div>
 
     <!-- Images -->
     <div class="grid grid-cols-2 gap-4">
-      <img src="{% static 'images/ronaldo.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
+      <img src="{% static 'images/placeholder.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 2" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 3" class="rounded-xl shadow-md hover:scale-105 transition">
       <img src="{% static 'images/placeholder.png' %}" alt="Venue 4" class="rounded-xl shadow-md hover:scale-105 transition">
@@ -85,11 +83,131 @@
     <div>
       <h2 class="text-3xl font-bold text-rose-700 mb-4 text-center">Tentang VenYuk!</h2>
       <p class="text-gray-700 text-lg leading-relaxed mb-6 text-center">
-        Venyuk merupakan aplikasi berbasis web untuk melakukan berbagai hal yang berkaitan dengan olahraga, seperti sewa venue, sewa alat olahraga, beli alat olahraga, blog, bahkan bisa mencari teman buat olahraga bareng. <br>
+        Venyuk merupakan aplikasi berbasis web untuk melakukan berbagai hal yang berkaitan dengan olahraga,
+        seperti sewa venue, sewa alat olahraga, beli alat olahraga, blog, bahkan bisa mencari teman buat olahraga bareng.
+        <br>
         Aplikasi ini dibuat oleh tim PBB B05 dengan 6 anggota, yaitu, Andi, Ello, Bintoro, Rasyad, Clairine, dan Zaka.
       </p>
     </div>
   </div>
 </section>
-</html>
 {% endblock content %}
+
+<!-- Navbar (navbar.html) -->
+{% load static %}
+<nav class="navbar">
+  <a href="/" class="logo">
+    <img src="{% static 'images/logo_venyuk.png' %}" alt="Logo Venyuk">
+  </a>
+  <ul class="nav-links">
+    <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
+    <li><a href="#promo">Promo</a></li>
+    <li><a href="#ven-shop">Ven-Shop</a></li>
+    <li><a href="#main-bareng">Main Bareng</a></li>
+    <li><a href="#versus">Versus</a></li>
+    <li><a href="#blog">Blog</a></li>
+  </ul>
+
+  {% if user.is_authenticated %}
+  <div class="profile-container">
+    <div class="profile-info" id="profile-toggle">
+      <img src="{% static 'images/profile_icon.png' %}" alt="Profile" class="profile-icon">
+      <span class="nickname">{{ user.username }}</span>
+    </div>
+    <div class="dropdown-menu hidden" id="dropdown-menu">
+      <a href="{% url 'authenticate:login' %}">👤 Profile</a>
+      <a href="{% url 'authenticate:login' %}">📊 Dashboard</a>
+      <a href="{% url 'authenticate:logout' %}">🚪 Logout</a>
+    </div>
+  </div>
+  {% else %}
+  <a href="{% url 'authenticate:login' %}" class="btn-masuk">MASUK</a>
+  {% endif %}
+
+  <div class="hamburger">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</nav>
+
+<!-- Navbar JS -->
+<script>
+  const hamburger = document.querySelector(".hamburger");
+  const navLinks = document.querySelector(".nav-links");
+  hamburger.addEventListener("click", () => {
+    navLinks.classList.toggle("active");
+  });
+
+  const profileToggle = document.getElementById('profile-toggle');
+  const dropdownMenu = document.getElementById('dropdown-menu');
+  profileToggle?.addEventListener('click', () => {
+    dropdownMenu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!profileToggle?.contains(event.target) && !dropdownMenu?.contains(event.target)) {
+      dropdownMenu?.classList.add('hidden');
+    }
+  });
+</script>
+
+<!-- Navbar CSS -->
+<style>
+  .navbar {
+    background-color: white;
+    padding: 1rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+  .logo { display: flex; align-items: center; height: 50px; }
+  .logo img { height: 100%; width: auto; object-fit: contain; }
+  .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; margin: 0; padding: 0; }
+  .nav-links a { text-decoration: none; color: #666; transition: color 0.3s; }
+  .nav-links a:hover { color: #c84b4b; }
+  .btn-masuk { background-color: #c84b4b; color: white; padding: 0.7rem 2rem; border-radius: 8px; text-decoration: none; transition: background-color 0.3s; white-space: nowrap; }
+  .btn-masuk:hover { background-color: #a83d3d; }
+  .hamburger { display: none; cursor: pointer; flex-direction: column; gap: 4px; }
+  .hamburger span { display: block; width: 25px; height: 3px; background-color: #333; border-radius: 2px; transition: all 0.3s ease; }
+  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(7px,-6px); }
+
+  /* Media Queries */
+  @media (max-width: 768px) {
+    .nav-links { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: white; box-shadow: 0 4px 5px rgba(0,0,0,0.1); padding: 1rem 0; gap: 1.5rem; z-index: 999; }
+    .nav-links.active { display: flex; }
+    .nav-links li { width: 100%; text-align: center; }
+    .btn-masuk { padding: 0.5rem 1.5rem; font-size: 0.9rem; }
+    .hamburger { display: flex; }
+    .logo { height: 40px; }
+  }
+
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .nav-links { gap: 1.5rem; }
+    .nav-links a { font-size: 0.9rem; }
+  }
+
+  /* Profile Container */
+  .profile-container { position: relative; display: flex; align-items: center; cursor: pointer; }
+  .profile-info { display: flex; align-items: center; gap: 8px; }
+  .profile-icon { width: 40px; height: 40px; border-radius: 50%; background-color: #1976D2; object-fit: cover; }
+  .nickname { font-weight: 600; color: #333; }
+
+  /* Dropdown Menu */
+  .dropdown-menu { position: absolute; top: 110%; right: 0; background: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: flex; flex-direction: column; min-width: 160px; overflow: hidden; z-index: 999; animation: fadeIn 0.25s ease-in-out; }
+  .dropdown-menu a { padding: 10px 16px; text-decoration: none; color: #333; font-weight: 500; transition: background 0.2s; }
+  .dropdown-menu a:hover { background-color: #f5f5f5; color: #c84b4b; }
+  .hidden { display: none; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

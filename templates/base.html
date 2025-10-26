@@ -4,18 +4,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% block meta %}{% endblock meta %}
+    <title>{% block title %}Venyuk!{% endblock title %}</title>
+    {% block meta %} {% endblock meta %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
   </head>
   <body>
-    {% include 'navbar.html' %}
-
-    <main class="pt-24">
-      {% block content %}{% endblock content %}
-    </main>
-  </body>
-
+    {% block content %} {% endblock content %}
+  
   <!-- Toast -->
   <div id="toast" class="fixed top-5 right-5 hidden z-[9999]">
     <div id="toastContent" class="bg-gray-800 text-white px-5 py-3 rounded-lg shadow-lg"></div>
@@ -42,26 +38,16 @@
       document.getElementById("loginModal")?.classList.remove("hidden");
     });
 
-    // AJAX login
-    document.getElementById("loginForm")?.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-      const response = await fetch("{% url 'authenticate:login' %}", {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest" },
-        body: formData
-      });
-
-      const data = await response.json();
-      if (response.ok && data.status) {
-        showToast("Login berhasil! Selamat datang, " + data.username);
-        document.getElementById("loginModal")?.classList.add("hidden");
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        showToast(data.message || "Login gagal!", false);
-      }
-    });
-  </script>
+    const data = await response.json();
+    if (response.ok && data.status) {
+      showToast("Login berhasil! Selamat datang, " + data.username);
+      document.getElementById("loginModal").classList.add("hidden");
+      // Optionally reload navbar or page
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast(data.message || "Login gagal!", false);
+    }
+  });
+</script>
+</body>
 </html>

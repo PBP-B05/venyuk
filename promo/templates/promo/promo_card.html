@@ -1,0 +1,63 @@
+<!-- 
+  File ini adalah template untuk SATU kartu promo.
+  File ini di-include oleh promo_list.html
+-->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl">
+    
+    <!-- Bagian Atas (Gambar & Overlay Teks) -->
+    <div class="relative h-56 w-full">
+        <!-- Gambar Thumbnail -->
+        <img 
+            src="{% if promo.thumbnail %}{{ promo.thumbnail.url }}{% else %}https://placehold.co/600x400/333333/FFFFFF?text=Promo{% endif %}" 
+            alt="Thumbnail {{ promo.title }}" 
+            class="w-full h-full object-cover"
+            onerror="this.onerror=null;this.src='https://placehold.co/600x400/333333/FFFFFF?text=Promo';">
+        
+        <!-- Overlay Gelap -->
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+
+        <!-- Teks Overlay (Sesuai Desain) -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-white text-center">
+            <h3 class="font-bold text-xl uppercase max-w-xs truncate">{{ promo.title }}</h3>
+            <h2 class="font-extrabold text-4xl md:text-5xl mt-1">DISKON {{ promo.amount_discount }}%</h2>
+            <!-- Anda bisa menambahkan tombol kecil di sini jika mau, seperti di gambar -->
+            <!-- <span class="mt-3 text-xs font-semibold border border-white px-3 py-1 rounded-full">LIHAT SEMUA PROMO</span> -->
+        </div>
+    </div>
+
+    <!-- Bagian Bawah (Konten) -->
+    <div class="p-6 flex-grow flex flex-col">
+        <!-- Label Diskon -->
+        <span class="text-red-600 font-bold text-sm">{{ promo.amount_discount }}% OFF</span>
+        
+        <!-- Judul -->
+        <h4 class="text-lg font-bold text-gray-900 mt-1 truncate" title="{{ promo.title }}">
+            {{ promo.title }}
+        </h4>
+        
+        <!-- Deskripsi Singkat (dari gambar "First time book venue") -->
+        <p class="text-sm text-gray-600 mt-1 flex-grow truncate" title="{{ promo.description }}">
+            {{ promo.description }}
+        </p>
+
+        <!-- Tanggal Berlaku -->
+        <p class="text-xs text-gray-500 mt-3 font-medium">
+            {{ promo.start_date|date:"d M" }} - {{ promo.end_date|date:"d M Y" }}
+        </p>
+
+        <!-- Tombol Aksi (di bagian bawah) -->
+        <div class="mt-6">
+            <a href="{% url 'promo:promo-detail' promo.pk %}" class="block w-full text-center bg-red-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-800 transition duration-300 shadow-md">
+                Show Details
+            </a>
+
+            <!-- Tombol Edit (Hanya untuk user login) -->
+            {% if user.is_staff %}
+            <a href="{% url 'promo:promo-update' promo.pk %}" class="block w-full text-center bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition duration-300 mt-2 text-sm">
+                Edit Promo
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
