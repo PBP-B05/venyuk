@@ -1,0 +1,5 @@
+{% for match in user_matches %}
+    {% include 'card_match.html' with match=match %}
+{% empty %}
+    <p class="text-gray-600 text-center">Belum ada pertandingan yang didaftarkan.</p>
+{% endfor %}

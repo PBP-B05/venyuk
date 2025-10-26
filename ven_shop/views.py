@@ -226,4 +226,3 @@ def purchase_history(request):
 
 
 
-
