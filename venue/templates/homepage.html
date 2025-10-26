@@ -54,8 +54,8 @@
         {% for venue in venues %}
           <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
             <!-- Gambar Venue -->
-            {% if venue.thumbnail %}
-                <img src="{{ venue.thumbnail.url }}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
+            {% if venue.get_image_url %}
+                <img src="{{ venue.get_image_url }}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
             {% else %}
                 <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="w-full h-56 object-cover" loading="lazy">
             {% endif %}
@@ -191,6 +191,10 @@ let currentVenueId = '';
 let currentVenueName = '';
 let availableSlots = [];
 
+function formatTimeDisplay(timeStr) {
+    const hour = parseInt(timeStr.split(':')[0]);
+    return `${hour.toString().padStart(2, '0')}:00`;
+}
 // Function untuk generate jam options dengan validasi
 function generateTimeOptions() {
     const startSelect = $('#startTime');
@@ -204,7 +208,7 @@ function generateTimeOptions() {
     for (let i = 7; i <= 22; i++) {
         const hour = i.toString().padStart(2, '0');
         const timeValue = `${hour}:00`;
-        const timeDisplay = `${hour}:00`;
+        const timeDisplay = formatTimeDisplay(timeValue);
         
         startSelect.append(`<option value="${timeValue}">${timeDisplay}</option>`);
         if (i > 7) { // End time options mulai dari jam 8
@@ -245,7 +249,7 @@ function updateAvailableSlots() {
             // Untuk start time, semua slot available kecuali yang terakhir (22:00)
             availableSlots.forEach(slot => {
                 if (slot !== '22:00') { // 22:00 tidak bisa jadi start time
-                    startSelect.append(`<option value="${slot}">${slot}</option>`);
+                    startSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
                 }
             });
             
@@ -301,7 +305,7 @@ function updateEndTimeOptions() {
             }
             
             if (allIntermediateSlotsAvailable) {
-                endSelect.append(`<option value="${slot}">${slot}</option>`);
+                endSelect.append(`<option value="${slot}">${formatTimeDisplay(slot)}</option>`);
             }
         }
     });
@@ -364,7 +368,6 @@ function validateTime() {
     return false;
 }
 
-// Optimized Modal Functions
 function openBookingModal(venueId, venuePrice, venueName = '') {
     currentVenuePrice = venuePrice;
     currentVenueId = venueId;
@@ -377,15 +380,22 @@ function openBookingModal(venueId, venuePrice, venueName = '') {
     $('#timeError').hide();
     $('#submitBookingBtn').prop('disabled', true).text('Booking Sekarang');
     
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    $('#bookingDate').attr('min', today);
-    $('#bookingDate').val(today);
+    // PERBAIKAN: Set minimum date to tomorrow (H+1)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1); // Tambah 1 hari
+    
+    const timezoneOffset = tomorrow.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localDate = new Date(tomorrow - timezoneOffset);
+    const tomorrowFormatted = localDate.toISOString().split('T')[0];
+    
+    $('#bookingDate').attr('min', tomorrowFormatted);
+    $('#bookingDate').val(tomorrowFormatted);
     
     // Generate default time options
     generateTimeOptions();
     
-    // Load availability for today
+    // Load availability for tomorrow
     setTimeout(() => {
         updateAvailableSlots();
     }, 100);
@@ -480,18 +490,46 @@ function updateVenues(venues) {
             ? 'bg-rose-600 hover:bg-rose-700 text-white' 
             : 'bg-gray-300 text-gray-500 cursor-not-allowed';
         const buttonText = isAvailable ? 'Book Now' : 'Not Available';
-        const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price})` : '';
+        const onClick = isAvailable ? `bookVenue('${venue.id}', ${venue.price}, '${venue.name.replace(/'/g, "\\'")}')` : '';
 
+        // Handle category tags
         const categoryTags = venue.categories_list && venue.categories_list.length > 0 
             ? venue.categories_list.map(cat => 
                 `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">${cat}</span>`
               ).join('')
             : `<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-100 text-rose-700">General</span>`;
 
+        // Handle image URL - prioritize get_image_url, then image_url, then thumbnail, then placeholder
+        let imageUrl = '';
+        if (venue.get_image_url) {
+            imageUrl = venue.get_image_url;
+        } else if (venue.image_url) {
+            imageUrl = venue.image_url;
+        } else if (venue.thumbnail) {
+            imageUrl = venue.thumbnail;
+        } else {
+            imageUrl = '{% static 'images/placeholder.png' %}';
+        }
+
+        // Handle address truncation
+        const displayAddress = venue.address ? 
+            (venue.address.length > 30 ? venue.address.substring(0, 30) + '...' : venue.address) : 
+            'Alamat tidak tersedia';
+
+        // Format rating to 1 decimal place
+        const displayRating = typeof venue.rating === 'number' ? venue.rating.toFixed(1) : '0.0';
+
+        // Format price with Indonesian locale
+        const displayPrice = typeof venue.price === 'number' ? 
+            venue.price.toLocaleString('id-ID') : '0';
+
         container.append(`
             <div class="venue-card bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition overflow-hidden group">
-                <img src="${venue.thumbnail || '{% static 'images/placeholder.png' %}'}"
-                     class="w-full h-56 object-cover" alt="${venue.name}" loading="lazy">
+                <img src="${imageUrl}"
+                     class="w-full h-56 object-cover" 
+                     alt="${venue.name}"
+                     loading="lazy"
+                     onerror="this.onerror=null; this.src='{% static 'images/placeholder.png' %}'">
                 <div class="p-5">
                     <div class="flex flex-wrap gap-1 mb-2">
                         ${categoryTags}
@@ -499,21 +537,30 @@ function updateVenues(venues) {
                     <h3 class="text-lg font-semibold text-slate-900 mb-1">${venue.name}</h3>
                     <div class="flex items-center text-slate-600 mb-2">
                         <span class="text-yellow-500 me-1">★</span>
-                        <span class="font-semibold me-2">${venue.rating}</span>
-                        <span class="text-slate-500 text-sm">• ${venue.address ? (venue.address.length > 30 ? venue.address.substring(0, 30) + '...' : venue.address) : ''}</span>
+                        <span class="font-semibold me-2">${displayRating}</span>
+                        <span class="text-slate-500 text-sm">• ${displayAddress}</span>
                     </div>
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-rose-600 font-semibold">Rp ${venue.price.toLocaleString('id-ID')}</span>
+                        <span class="text-rose-600 font-semibold">Rp ${displayPrice}</span>
                         <span class="text-sm text-slate-500">/ jam</span>
                     </div>
-                    <button class="w-full ${buttonClass} py-2 rounded-md font-semibold transition"
-                            onclick="${onClick}">
+                    <button class="w-full ${buttonClass} py-2 rounded-md font-semibold transition duration-200 transform hover:scale-105"
+                            onclick="${onClick}"
+                            ${!isAvailable ? 'disabled' : ''}>
                         ${buttonText}
                     </button>
                 </div>
             </div>
         `);
     });
+
+    // Add image error handling for all venue images
+    setTimeout(() => {
+        $('.venue-card img').on('error', function() {
+            console.log('Image failed to load, using placeholder:', this.src);
+            $(this).attr('src', '{% static 'images/placeholder.png' %}');
+        });
+    }, 100);
 }
 
 function showToast(title, message, type) {
