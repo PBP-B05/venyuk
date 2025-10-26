@@ -17,9 +17,8 @@ from ven_shop.forms import ProductForm
 from django.db.models import F
 import requests
 import uuid
-from django.utils import timezone
-from promo.models import Promo
-from django.db import transaction
+
+
 
 # Create your views here.
 @csrf_exempt
@@ -144,93 +143,47 @@ def delete_product(request, id):
 @csrf_exempt
 def checkout_product(request, id):
     product = get_object_or_404(Product, pk=id)
-   
+    
     if request.method == 'POST':
-        product.refresh_from_db()
-       
+        product.refresh_from_db() 
+        
         if product.stock > 0:
-            # Ambil promo code dari POST
-            promo_code_str = request.POST.get('promo', '').strip()
-            original_price = product.price  # Fixed price, qty=1
-            final_price = original_price
-            promo_to_update = None
-            promo_message = "Pembelian berhasil!"
+            product.stock = F('stock') - 1
+            product.save()
             
-            try:
-                with transaction.atomic():
-                    if promo_code_str:
-                        try:
-                            promo = Promo.objects.select_for_update().get(code__iexact=promo_code_str)
-                            now = timezone.now().date()
-                           
-                            is_valid = True
-                            if not promo.is_active or promo.end_date < now:
-                                is_valid = False
-                           
-                            if not promo.code.upper().startswith("SHOP"):
-                                is_valid = False
-                           
-                            if promo.max_uses is not None and promo.max_uses <= 0: 
-                                is_valid = False
-                           
-                            if is_valid:
-                                discount_percent = promo.amount_discount
-                                discount_amount = original_price * (discount_percent / 100)
-                                final_price = original_price - discount_amount  # Fixed price, bukan multiply durasi
-                                promo_to_update = promo
-                                promo_message = f"Promo {promo.code} diterapkan! Diskon {discount_percent}% (Rp {discount_amount:,.0f})."
-                        except Promo.DoesNotExist:
-                            promo_message = "Kode promo tidak ditemukan. Harga asli diterapkan."
-                    
-                    # Update stok
-                    product.stock = F('stock') - 1
-                    product.save()
-                    product.refresh_from_db()
-                   
-                    # Buat record pembelian
-                    Purchased_Product.objects.create(
-                        user=request.user,
-                        product=product
-                    )
-                   
-                    # Update max_uses jika ada promo valid
-                    if promo_to_update:
-                        promo_to_update.max_uses -= 1
-                        promo_to_update.save()
-                   
-                    # Ambil email dan address
-                    email = request.POST.get('email', '').strip()
-                    address = request.POST.get('address', '').strip()
-                    if email:
-                        # Payload webhook dengan detail diskon
-                        webhook_url = 'https://ligia-quantummechanical-ida.ngrok-free.dev/webhook/8d8ced10-4e23-4c39-9dbb-a9dea0409259'
-                        payload = {
-                            'email': email,
-                            'address': address,
-                            'transaction_id': str(uuid.uuid4()),
-                            'product_name': product.title,
-                        }
-                        try:
-                            response = requests.get(webhook_url, json=payload, timeout=10)
-                        except requests.RequestException as e:
-                            print(f"Webhook error: {e}")
-                   
-                    # Redirect dengan pesan
-                    messages.success(request, promo_message)
-                    return redirect('ven_shop:purchase_success', id=product.id)
-                    
-            except Exception as e:  # Catch IntegrityError atau lain
-                # Rollback otomatis via transaction
-                messages.error(request, f'Terjadi kesalahan: {str(e)}')
-                context = {'product': product}
-                return render(request, 'checkout.html', context)
+            product.refresh_from_db() 
+            Purchased_Product.objects.create(
+                user=request.user,
+                product=product
+            )
+            
+            # Ambil email dari form
+            email = request.POST.get('email', '').strip()  # Wajib, strip whitespace
+            address = request.POST.get('address', '').strip()
+            if email:  # Pastikan email ada
+                # Panggil webhook dengan parameter email
+                webhook_url = 'https://ligia-quantummechanical-ida.ngrok-free.dev/webhook/8d8ced10-4e23-4c39-9dbb-a9dea0409259'  # Ganti dengan URL webhook Anda
+                payload = {
+                    'email': email,
+                    'address': address,
+                    'transaction_id': str(uuid.uuid4()),  
+                    'product_name': product.title,
+                }
+                try:
+                    response = requests.get(webhook_url, json=payload, timeout=10)
+                    # Opsional: Log response jika diperlukan (misalnya print(response.status_code))
+                except requests.RequestException as e:
+                    # Handle error webhook jika diperlukan (misalnya log, tapi jangan hentikan proses)
+                    print(f"Webhook error: {e}")  # Ganti dengan logging proper
+            
+            return redirect('ven_shop:purchase_success', id=product.id)
         else:
             context = {
                 'product': product,
                 'error': 'Maaf, stok produk ini baru saja habis.'
             }
             return render(request, 'checkout.html', context)
-   
+    
     context = {'product': product}
     return render(request, 'checkout.html', context)
 
