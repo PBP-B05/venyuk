@@ -6,7 +6,6 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("versus/", include(("versus.urls", "versus"), namespace="versus")),
-    # routes app lain…
     path("promo/", include("promo.urls")),
     path("", include("venue.urls")),
     path("authenticate/", include("authenticate.urls")),
