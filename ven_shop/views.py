@@ -98,7 +98,9 @@ def create_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
-            form.save()
+            product = form.save(commit=False)
+            product.user = request.user   
+            product.save()
             return redirect('ven_shop:show_main')
     else:
         form = ProductForm()
