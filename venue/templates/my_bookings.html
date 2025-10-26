@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>My Bookings - VenYuk!</title>
+{% endblock meta %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="w-full pt-16 min-h-screen bg-gradient-to-br from-slate-50 via-rose-100 to-slate-200">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">My Bookings</h1>
+            <p class="text-slate-600">Riwayat booking venue Anda</p>
+        </div>
+
+        {% if bookings %}
+        <div class="grid gap-6" id="bookings-container">
+            {% for booking in bookings %}
+            <div class="booking-item bg-white rounded-xl border border-slate-200 shadow-sm p-6" data-booking-id="{{ booking.id }}">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-slate-800 mb-1">{{ booking.venue.name }}</h3>
+                                <div class="flex items-center text-slate-600 mb-2">
+                                    <span class="text-sm">{{ booking.venue.get_categories_display }}</span>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium 
+                                {% if booking.status == 'confirmed' %}bg-green-100 text-green-800
+                                {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif booking.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-slate-500">Tanggal</span>
+                                <p class="font-medium text-slate-800">{{ booking.booking_date }}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Waktu</span>
+                                <p class="font-medium text-slate-800">{{ booking.start_time }} - {{ booking.end_time }}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Total Harga</span>
+                                <p class="font-medium text-rose-600">Rp {{ booking.total_price|floatformat:0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+                    <div class="mt-4 lg:mt-0 lg:ml-6">
+                        <button type="button" 
+                                class="cancel-booking-btn px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition font-medium text-sm"
+                                data-booking-id="{{ booking.id }}"
+                                data-venue-name="{{ booking.venue.name }}"
+                                data-booking-date="{{ booking.booking_date }}">
+                            Batalkan
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center text-slate-500 text-sm">
+                        <span>Dibooking pada: {{ booking.created_at|date:"d M Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl border border-slate-200 px-10 py-16 text-center shadow-sm">
+            <div class="w-24 h-24 mx-auto mb-6">
+                <img src="{% static 'images/placeholder.png' %}" alt="No Bookings" class="w-full h-full object-contain opacity-60">
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-3">Belum ada booking</h3>
+            <p class="text-slate-600 mb-6">Anda belum melakukan booking venue apapun.</p>
+            <a href="{% url 'venue:home_section' %}" 
+               class="inline-block px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition font-semibold">
+                Booking Sekarang
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast" class="fixed top-6 right-6 z-50" style="display: none;">
+    <div id="toast-inner" class="border px-5 py-4 rounded-xl shadow-md font-semibold"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// Function untuk show toast notifications
+function showToast(title, message, type) {
+    const toast = $('#toast');
+    const inner = $('#toast-inner');
+
+    const color = type === "success" ? "bg-green-100 text-green-800 border-green-300"
+                : type === "error" ? "bg-red-100 text-red-800 border-red-300"
+                : type === "info" ? "bg-blue-100 text-blue-800 border-blue-300"
+                : "bg-yellow-100 text-yellow-800 border-yellow-300";
+
+    inner.attr('class', `border px-5 py-4 rounded-xl shadow-md font-semibold ${color}`);
+    inner.html(`<strong>${title}</strong><br>${message}`);
+    toast.show();
+
+    setTimeout(() => toast.hide(), 5000);
+}
+
+// Handle cancel booking dengan AJAX
+$(document).ready(function() {
+    $('.cancel-booking-btn').on('click', function() {
+        const button = $(this);
+        const bookingId = button.data('booking-id');
+        const venueName = button.data('venue-name');
+        const bookingDate = button.data('booking-date');
+        
+        // Konfirmasi pembatalan
+        if (!confirm(`Apakah Anda yakin ingin membatalkan booking ${venueName} pada ${bookingDate}?`)) {
+            return;
+        }
+        
+        // Disable button dan show loading state
+        button.prop('disabled', true).text('Membatalkan...');
+        
+        // Kirim request AJAX
+        $.ajax({
+            url: `{% url 'venue:cancel_booking' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', bookingId),
+            method: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast("Success!", response.message, "success");
+                    
+                    // Update UI - hapus atau update booking item
+                    const bookingItem = $(`[data-booking-id="${bookingId}"]`);
+                    
+                    // Update status badge
+                    bookingItem.find('.px-3.py-1').removeClass('bg-green-100 bg-yellow-100')
+                        .addClass('bg-red-100 text-red-800')
+                        .text('Cancelled');
+                    
+                    // Hapus tombol batalkan
+                    button.closest('.mt-4').remove();
+                    
+                    // Update teks status di badge
+                    bookingItem.find('.px-3.py-1').text('Dibatalkan');
+                    
+                } else {
+                    showToast("Error", response.message, "error");
+                    button.prop('disabled', false).text('Batalkan');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('Cancel booking error:', xhr.responseText);
+                let errorMessage = "Terjadi kesalahan saat membatalkan booking";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    // Use default error message
+                }
+                
+                showToast("Error", errorMessage, "error");
+                button.prop('disabled', false).text('Batalkan');
+            }
+        });
+    });
+});
+</script>
+
+{% endblock content %}
