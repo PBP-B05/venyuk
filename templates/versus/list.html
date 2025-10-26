@@ -3,6 +3,7 @@
 
 {% block content %}
 
+<!-- HERO -->
 <div class="w-full h-[260px] md:h-[300px] bg-cover bg-center"
      style="background-image:url({% static 'images/versus_banner3.jpg' %});">
   <div class="w-full h-full bg-black/20"></div>
@@ -10,6 +11,7 @@
 
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
 
+  <!-- HEADER + FILTER -->
   <div class="flex items-center justify-between gap-3 flex-wrap bg-white px-3 py-2 rounded-lg shadow">
     <h1 class="text-xl md:text-2xl font-semibold">Versus</h1>
 
@@ -35,6 +37,7 @@
     </a>
   </div>
 
+  <!-- STATES -->
   <div id="vs-loading" class="bg-white rounded-2xl border border-gray-200 p-10 mt-6 text-center hidden">
     <div class="animate-spin mx-auto h-8 w-8 border-2 rounded-full"
          style="border-color:#D84040;border-top-color:transparent"></div>
@@ -60,19 +63,24 @@
     </div>
   </div>
 
+  <!-- GRID -->
   <div id="vs-grid" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
 </div>
 
+<!-- FLOATING CTA (mobile) -->
 <a href="{% url 'versus:create' %}"
    class="fixed bottom-4 right-4 sm:hidden shadow-lg rounded-full text-white px-5 py-3 text-sm hover:opacity-90 transition"
    style="background-color:#D84040">
    + Create VERSUS
 </a>
 
+<!-- =============== AJAX SCRIPT =============== -->
 <script>
+  // --- Config
   const API_LIST_URL = "{% url 'versus:api_list' %}";
   const API_JOIN_URL = (id) => `{% url 'versus:api_join' 0 %}`.replace('/0/', `/${id}/`);
 
+  // --- DOM refs
   const gridEl = document.getElementById('vs-grid');
   const loadingEl = document.getElementById('vs-loading');
   const errorEl = document.getElementById('vs-error');
@@ -80,6 +88,7 @@
   const filterForm = document.getElementById('filter-form');
   const filterSport = document.getElementById('filter-sport');
 
+  // --- Helpers
   function showState({loading=false, error=false, empty=false, grid=false}) {
     loadingEl.classList.toggle('hidden', !loading);
     errorEl.classList.toggle('hidden', !error);
@@ -106,6 +115,14 @@
     return m[s?.toLowerCase?.()] || "default.png";
   }
 
+  // (Opsional) Ambil CSRF kalau kamu mematikan csrf_exempt di views API
+  function getCookie(name) {
+    const v = document.cookie.match("(^|;)\\s*"+name+"\\s*=\\s*([^;]+)");
+    return v ? v.pop() : "";
+  }
+  const CSRF_TOKEN = getCookie('csrftoken');
+
+  // --- Build card
   function buildCard(ch) {
     const el = document.createElement('div');
     el.className = "bg-white rounded-2xl shadow p-6 flex flex-col";
@@ -154,18 +171,22 @@
       </div>
     `;
 
+    // Join handler + KONFIRMASI
     const btn = el.querySelector('[data-join]');
     if (btn) {
       btn.addEventListener('click', async () => {
-        if (!confirm('Yakin mau join matchup ini?')) return;  
+        if (!confirm('Yakin mau join matchup ini?')) return; // konfirmasi dulu
         btn.disabled = true;
         try {
           const res = await fetch(API_JOIN_URL(ch.id), {
             method: "POST",
-            headers: { "Accept": "application/json" },
+            headers: {
+              "Accept": "application/json",
+              // "X-CSRFToken": CSRF_TOKEN, // aktifkan jika API tidak csrf_exempt
+            },
           });
           if (!res.ok) throw new Error("Join gagal");
-          await loadChallenges(); 
+          await loadChallenges(); // refresh list
         } catch (e) {
           console.error(e);
           alert("Gagal join. Coba lagi.");
@@ -178,11 +199,13 @@
     return el;
   }
 
+  // --- Render list
   function renderList(items) {
     gridEl.innerHTML = "";
     items.forEach(ch => gridEl.appendChild(buildCard(ch)));
   }
 
+  // --- Fetch list
   async function loadChallenges() {
     showState({ loading: true });
     try {
@@ -208,11 +231,14 @@
     }
   }
 
+  // --- Events
   filterForm.addEventListener('submit', (e) => {
     e.preventDefault();
     loadChallenges();
   });
 
+  // init
   loadChallenges();
 </script>
 {% endblock content %}
+
