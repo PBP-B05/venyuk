@@ -24,8 +24,8 @@ class Product(models.Model):
     price = models.IntegerField()
     rating = models.FloatField(default=0.0)
     stock = models.IntegerField()
-    reviewer = models.CharField(max_length=255, null=True, blank=True)
-    brand = models.CharField(max_length=100, null=True, blank=True)
+    reviewer = models.IntegerField(default=0)
+    brand = models.CharField()
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
