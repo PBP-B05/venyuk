@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 
+
 class SportChoices(models.TextChoices):
     SEPAK_BOLA   = "sepak bola", "Sepak Bola"
     FUTSAL       = "futsal", "Futsal"
@@ -18,14 +19,30 @@ class SportChoices(models.TextChoices):
     SHOOTING     = "shooting", "Shooting"
     TENNIS_MEJA  = "tennis meja", "Tennis Meja"
 
+
 class Community(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="communities")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="communities",
+    )
     name = models.CharField(max_length=120)
     primary_sport = models.CharField(max_length=20, choices=SportChoices.choices)
     bio = models.TextField(blank=True)
 
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="joined_communities",
+        blank=True,
+    )
+
     def __str__(self):
         return self.name
+
+    @property
+    def total_members(self) -> int:
+        return 1 + self.members.count()
+
 
 class Challenge(models.Model):
     class Status(models.TextChoices):
@@ -40,24 +57,59 @@ class Challenge(models.Model):
         CUP_FINAL     = "cup_final", "Cup Final"
         LEAGUE        = "league", "League"
 
+    CATEGORY_COMMUNITY_SIZE = {
+        MatchCategory.CUP_FINAL: 2,
+        MatchCategory.RO16: 16,
+        MatchCategory.QUARTER_FINAL: 8,
+        MatchCategory.SEMI_FINAL: 4,
+        MatchCategory.LEAGUE: 24,
+    }
+
     title = models.CharField(max_length=160)
     sport = models.CharField(max_length=20, choices=SportChoices.choices)
-    match_category = models.CharField(          
+    match_category = models.CharField(
         max_length=20,
         choices=MatchCategory.choices,
         default=MatchCategory.LEAGUE,
     )
 
-    host = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="hosted_challenges")
-    opponent = models.ForeignKey(Community, on_delete=models.SET_NULL, null=True, blank=True, related_name="joined_challenges")
+    # Community host & opponent (opponent = community pertama yang join)
+    host = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name="hosted_challenges",
+    )
+    opponent = models.ForeignKey(
+        Community,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="joined_challenges",
+    )
+
+    venue = models.ForeignKey(
+        "venue.Venue",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="versus_challenges",
+    )
+    venue_name = models.CharField(max_length=120, blank=True)
+
     start_at = models.DateTimeField()
     cost_per_person = models.PositiveIntegerField(null=True, blank=True)
-    prize_pool = models.PositiveIntegerField(null=True, blank=True, default=0)  
-    venue_name = models.CharField(max_length=120, blank=True)                   
-    players_joined = models.PositiveIntegerField(default=0)                     
+    prize_pool = models.PositiveIntegerField(null=True, blank=True, default=0)
+
+    # JUMLAH COMMUNITY yang ikut (termasuk host)
+    players_joined = models.PositiveIntegerField(default=1)
+
     banner_url = models.URLField(blank=True)
     description = models.TextField(blank=True)
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -69,29 +121,31 @@ class Challenge(models.Model):
     def get_absolute_url(self):
         return reverse("versus:detail", args=[self.pk])
 
-    SPORT_MAX = {
-        "sepak bola": 22,
-        "futsal": 10,
-        "mini soccer": 14,
-        "basketball": 10,
-        "voli": 12,      
-        "tennis": 4,     
-        "badminton": 4,
-        "padel": 4,
-        "pickle ball": 4,
-        "squash": 4,
-        "biliard": 4,
-        "golf": 4,       
-        "shooting": 1,   
-        "tennis meja": 4,
-    }
+    @property
+    def display_venue_name(self) -> str:
+        if self.venue_id and getattr(self.venue, "name", None):
+            return self.venue.name
+        return self.venue_name or ""
+
+    def get_stage_community_size(self) -> int | None:
+        return self.CATEGORY_COMMUNITY_SIZE.get(self.match_category)
 
     @property
     def max_players(self) -> int:
-        return self.SPORT_MAX.get((self.sport or "").lower(), 0)
+        return self.get_stage_community_size() or 0
 
     def try_close(self):
-        """Tutup otomatis jika kuota terpenuhi."""
-        if self.status == self.Status.OPEN and self.players_joined >= self.max_players > 0:
+        """
+        Tutup otomatis kalau jumlah community sudah memenuhi kapasitas kategori
+        """
+        if self.status != self.Status.OPEN:
+            return
+
+        cap = self.get_stage_community_size() or 2
+        if self.players_joined >= cap:
             self.status = self.Status.CLOSED
             self.save(update_fields=["status"])
+
+
+
+

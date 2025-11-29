@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="w-full h-[200px] bg-cover bg-center"
-     style="background-image:url({% static 'images/hero_versus.jpg' %});">
+     style="background-image:url({% static 'images/versus_banner3.jpg' %});"></div>
   <div class="w-full h-full bg-black/20"></div>
 </div>
 
@@ -18,16 +18,43 @@
         <h1 class="text-2xl font-semibold leading-snug">
           {{ ch.title|default:"Matchup" }}
         </h1>
+
         {% if ch.host %}
-          <p class="text-sm text-gray-500 mt-1">Host: {{ ch.host.name }}</p>
+          <p class="text-sm text-gray-600 mt-2">
+            <span class="font-semibold">Host Community:</span> {{ ch.host.name }}
+          </p>
+        {% endif %}
+
+        {% if ch.opponent %}
+          <p class="text-sm text-gray-600 mt-1">
+            <span class="font-semibold">Opponent Community:</span> {{ ch.opponent.name }}
+          </p>
+        {% else %}
+          <p class="text-sm text-gray-400 mt-1">Belum ada opponent community.</p>
         {% endif %}
       </div>
 
-      {% if ch.status %}
-        <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1">
-          {{ ch.get_status_display|default:ch.status }}
-        </span>
-      {% endif %}
+      <div class="flex flex-col items-end gap-2">
+        {% if ch.status %}
+          <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1">
+            {{ ch.get_status_display|default:ch.status }}
+          </span>
+        {% endif %}
+
+        {% if request.user.is_authenticated and ch.host.owner_id == request.user.id %}
+          <div class="flex gap-2 mt-1">
+            <a href="{% url 'versus:update' ch.pk %}"
+               class="px-3 py-1 rounded-full text-xs border border-gray-300 hover:bg-gray-50">
+              Edit
+            </a>
+            <a href="{% url 'versus:delete' ch.pk %}"
+               class="px-3 py-1 rounded-full text-xs text-white hover:opacity-90"
+               style="background-color:#D84040">
+              Delete
+            </a>
+          </div>
+        {% endif %}
+      </div>
     </div>
 
     {% if ch.banner_url %}
@@ -43,10 +70,10 @@
           <span>{{ ch.start_at|date:"j F Y • H:i" }}</span>
         </div>
 
-        {% if ch.venue_name %}
+        {% if ch.display_venue_name %}
         <div class="flex items-center gap-2">
           <span>📍</span>
-          <span>{{ ch.venue_name }}</span>
+          <span>{{ ch.display_venue_name }}</span>
         </div>
         {% endif %}
 
@@ -68,7 +95,7 @@
 
         <div class="flex items-center gap-2">
           <span>👥</span>
-          <span>{{ ch.players_joined }}/{{ ch.max_players }} pemain</span>
+          <span>{{ ch.players_joined }}/{{ ch.max_players }} communities joined</span>
         </div>
       </div>
 
@@ -89,10 +116,10 @@
         <form method="post" action="{% url 'versus:join' ch.pk %}">
           {% csrf_token %}
           <button type="submit"
-                  onclick="return confirm('Yakin mau join matchup ini?');"
+                  onclick="return confirm('Yakin mau join matchup ini sebagai community kamu?');"
                   class="rounded-full text-white px-5 py-2 text-sm hover:opacity-90 transition"
                   style="background-color:#D84040">
-            Join
+            Join as Community
           </button>
         </form>
       {% endif %}
@@ -100,5 +127,9 @@
   </div>
 </div>
 {% endblock %}
+
+
+
+
 
 
