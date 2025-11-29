@@ -8,6 +8,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 import datetime
 from django.views.decorators.csrf import csrf_exempt
+from .forms import UserEditForm, UserProfileEditForm
+from django.contrib import messages
 
 
 # ==============================================================
@@ -140,3 +142,32 @@ def get_user_data(request):
     return JsonResponse({
         "is_authenticated": False
     })
+    
+@login_required 
+def profile(request):
+    return render(request, 'authenticate/profile.html')
+
+@login_required
+def profile_edit(request):
+    if request.method == 'POST':
+        u_form = UserEditForm(request.POST, instance=request.user)
+        p_form = UserProfileEditForm(request.POST, 
+                                     request.FILES, 
+                                     instance=request.user.userprofile)
+        
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
+            messages.success(request, 'Profil Anda berhasil diperbarui!')
+            return redirect('authenticate:profile') 
+
+    else:
+        u_form = UserEditForm(instance=request.user)
+        p_form = UserProfileEditForm(instance=request.user.userprofile)
+
+    context = {
+        'u_form': u_form,
+        'p_form': p_form
+    }
+
+    return render(request, 'authenticate/profile_edit.html', context)

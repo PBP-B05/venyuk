@@ -3,6 +3,9 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from datetime import datetime, date, time
+from django.contrib.auth.models import User
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 class Venue(models.Model):
     CATEGORY_CHOICES = [
@@ -22,11 +25,13 @@ class Venue(models.Model):
         ('tennis meja', 'Tennis Meja'),
     ]
 
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     category = models.TextField(blank=True)
     address = models.TextField(blank=True)
-    thumbnail = models.URLField(blank=True, null=True)
+    thumbnail = models.ImageField(upload_to='venues/', blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)  # TAMBAH FIELD INI
     rating = models.FloatField(default=0.0)
     price = models.IntegerField(default=0)
     is_available = models.BooleanField(default=True)
@@ -51,6 +56,27 @@ class Venue(models.Model):
     
     def set_categories(self, categories_list):
         self.category = ",".join(categories_list)
+    
+    def get_image_url(self):
+        """Return image URL, prefer thumbnail if exists, otherwise use image_url"""
+        if self.thumbnail and self.thumbnail.url:
+            return self.thumbnail.url
+        elif self.image_url:
+            return self.image_url
+        return None
+    
+    def clean(self):
+        """Custom validation for the model"""
+        if self.image_url:
+            validator = URLValidator()
+            try:
+                validator(self.image_url)
+            except ValidationError:
+                raise ValidationError({'image_url': 'Enter a valid URL.'})
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -61,15 +87,61 @@ class Booking(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
     booking_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    total_price = models.IntegerField(default=0)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['venue', 'booking_date', 'status']),
+            models.Index(fields=['user', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.venue.name} - {self.booking_date}"
+
+    def get_duration_hours(self):
+        """Calculate duration in hours"""
+        start_dt = datetime.combine(date.today(), self.start_time)
+        end_dt = datetime.combine(date.today(), self.end_time)
+        duration = end_dt - start_dt
+        return duration.seconds // 3600
+
+    def is_editable(self):
+        """Check if booking can be edited"""
+        today = date.today()
+        if self.booking_date < today:
+            return False
+        
+        if self.status not in ['pending', 'confirmed']:
+            return False
+        
+        # If booking is today, check if start time hasn't passed
+        if self.booking_date == today:
+            now = datetime.now().time()
+            if self.start_time <= now:
+                return False
+        
+        return True
+
+    def has_time_conflict(self, other_booking):
+        """Check if this booking conflicts with another booking"""
+        if self.venue != other_booking.venue:
+            return False
+        
+        if self.booking_date != other_booking.booking_date:
+            return False
+        
+        # Check for time overlap
+        return (self.start_time < other_booking.end_time and 
+                self.end_time > other_booking.start_time)
     
     def __str__(self):
         return f"{self.user.username} - {self.venue.name} - {self.booking_date}"

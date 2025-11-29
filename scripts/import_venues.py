@@ -5,10 +5,17 @@ import pandas as pd
 import uuid
 import re
 
-# Setup Django environment
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Setup Django environment - PERBAIKI PATH INI
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'venyuk.settings')
-django.setup()
+
+try:
+    django.setup()
+    print("Django setup successful")
+except Exception as e:
+    print(f"Django setup failed: {e}")
+    sys.exit(1)
 
 from venue.models import Venue
 
@@ -99,11 +106,33 @@ def clean_rating(rating_value):
     except (ValueError, TypeError):
         return 0.0
 
+def clean_image_url(image_url_value):
+    """
+    Clean and validate image URL
+    """
+    if pd.isna(image_url_value) or not str(image_url_value).strip():
+        return None
+    
+    url = str(image_url_value).strip()
+    
+    # Basic URL validation
+    if url.startswith(('http://', 'https://')):
+        return url
+    return None
+
 def import_venues_from_excel(file_path):
     """
     Main function to import venues from Excel file with multiple categories
     """
     try:
+        # Test database connection first
+        try:
+            Venue.objects.count()
+            print("Database connection successful")
+        except Exception as e:
+            print(f"Database connection failed: {e}")
+            return 0, [str(e)]
+        
         # Read Excel file
         df = pd.read_excel(file_path)
         print(f"Loaded {len(df)} records from Excel file")
@@ -129,10 +158,11 @@ def import_venues_from_excel(file_path):
                 venue_data = {
                     'id': uuid.uuid4(),
                     'name': str(row['name']).strip(),
-                    'category': ",".join(categories),  # Save as CSV string
+                    'category': ",".join(categories),
                     'address': str(row['address']).strip() if not pd.isna(row['address']) else '',
                     'price': clean_price(row['price']),
                     'rating': clean_rating(row['rating']),
+                    'image_url': clean_image_url(row['image_url']),
                     'is_available': True
                 }
                 
@@ -142,10 +172,11 @@ def import_venues_from_excel(file_path):
                 
                 venues_created += 1
                 categories_display = ", ".join(categories)
-                print(f"Created: {venue.name} - Categories: [{categories_display}] - Rp {venue.price}")
+                image_info = f" - Image: {venue.image_url}" if venue.image_url else " - No image"
+                print(f"Created: {venue.name} - Categories: [{categories_display}] - Rp {venue.price}{image_info}")
                 
             except Exception as e:
-                error_msg = f"Error at row {index + 2}: {str(e)}"  # +2 karena header + 1-based index
+                error_msg = f"Error at row {index + 2}: {str(e)}"
                 errors.append(error_msg)
                 print(f"ERROR: {error_msg}")
                 continue
@@ -159,9 +190,14 @@ def import_venues_from_excel(file_path):
         for category, count in sorted(category_stats.items()):
             print(f"  {category}: {count} venues")
         
+        # Count venues with images
+        venues_with_images = Venue.objects.filter(image_url__isnull=False).count()
+        print(f"\n=== IMAGE STATS ===")
+        print(f"Venues with image URLs: {venues_with_images}")
+        
         if errors:
             print(f"\n=== ERRORS ({len(errors)}) ===")
-            for error in errors[:10]:  # Show first 10 errors only
+            for error in errors[:10]:
                 print(f"  {error}")
             if len(errors) > 10:
                 print(f"  ... and {len(errors) - 10} more errors")
@@ -173,7 +209,6 @@ def import_venues_from_excel(file_path):
         return 0, [str(e)]
 
 if __name__ == "__main__":
-    # Path yang benar - file ada di folder yang sama dengan script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     excel_file_path = os.path.join(script_dir, "dataset.xlsx")
     
@@ -183,5 +218,5 @@ if __name__ == "__main__":
         print(f"Error: Excel file not found at {excel_file_path}")
         print("Please ensure the file exists in the same directory as this script.")
     else:
-        print("Starting venue import with multiple categories support...")
+        print("Starting venue import with multiple categories and image URL support...")
         import_venues_from_excel(excel_file_path)

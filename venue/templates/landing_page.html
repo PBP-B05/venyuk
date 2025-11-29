@@ -63,10 +63,13 @@
 
     <!-- Images -->
     <div class="grid grid-cols-2 gap-4">
-      <img src="{% static 'images/placeholder.png' %}" alt="Venue 1" class="rounded-xl shadow-md hover:scale-105 transition">
-      <img src="{% static 'images/placeholder.png' %}" alt="Venue 2" class="rounded-xl shadow-md hover:scale-105 transition">
-      <img src="{% static 'images/placeholder.png' %}" alt="Venue 3" class="rounded-xl shadow-md hover:scale-105 transition">
-      <img src="{% static 'images/placeholder.png' %}" alt="Venue 4" class="rounded-xl shadow-md hover:scale-105 transition">
+      {% for venue in random_venues %}
+        {% if venue.get_image_url %}
+          <img src="{{ venue.get_image_url }}" alt="{{ venue.name }}" class="rounded-xl shadow-md hover:scale-105 transition w-full h-40 object-cover">
+        {% else %}
+          <img src="{% static 'images/placeholder.png' %}" alt="{{ venue.name }}" class="rounded-xl shadow-md hover:scale-105 transition w-full h-40 object-cover">
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -76,7 +79,7 @@
   <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
     <!-- Image -->
     <div class="flex justify-center">
-      <img src="{% static 'images/placeholder.png' %}" alt="Laptop Mockup" class="w-[80%] rounded-xl shadow-lg">
+      <img src="{% static 'images/landing_icon.png' %}" alt="Laptop Mockup" class="w-[80%] rounded-xl shadow-lg">
     </div>
 
     <!-- Text -->
