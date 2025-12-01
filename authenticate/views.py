@@ -43,7 +43,6 @@ def register(request):
                     })
                 return redirect('authenticate:login')
         else:
-            # ADD THIS PART 👇
             errors = form.errors.as_json()
             print("Registration errors:", errors)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -72,13 +71,14 @@ def login_user(request):
 
         print("Received username:", username)
         print("Received password:", password)
-
+        
         if not username or not password:
-            messages.error(request, "Please fill in both username and password.")
+            message = "Please fill in both username and password."
+            messages.error(request, message)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     "status": False,
-                    "message": "Please fill in both username and password."
+                    "message": message
                 }, status=400)
             return render(request, 'authenticate/login.html')
 
@@ -87,23 +87,29 @@ def login_user(request):
 
         if user is not None:
             login(request, user)
-            response = HttpResponseRedirect(reverse("venue:home_section"))
-            response.set_cookie('last_login', str(datetime.datetime.now()))
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
-                    "status": True,
+                    "status": True, 
                     "message": "Successfully logged in!"
                 })
+            
+            response = HttpResponseRedirect(reverse("venue:home_section"))
+            response.set_cookie('last_login', str(datetime.datetime.now()))
             return response
         else:
-            messages.error(request, 'Invalid username or password.')
+            message = 'Invalid username or password.'
+            messages.error(request, message)
+            
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     "status": False,
-                    "message": "Invalid username or password."
+                    "message": message
                 }, status=401)
+            
+            return render(request, 'authenticate/login.html')
     
+    # KASUS GET Request
     return render(request, 'authenticate/login.html')
 
 
