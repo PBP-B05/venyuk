@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>VenYuk! - Register</title>
+{% endblock meta %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<!-- Wrapper -->
+<div class="min-h-screen w-full flex items-center justify-center pt-24 pb-12 bg-cover bg-center bg-no-repeat"
+     style="background-image: linear-gradient(rgba(142,22,22,0.7), rgba(216,64,64,0.7)), url('{% static 'images/register_bg.png' %}')">
+
+  <!-- Register Card -->
+  <div class="bg-white/90 backdrop-blur-md shadow-xl rounded-2xl p-8 w-full max-w-md mx-4 border border-slate-200">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-rose-700">REGISTRASI AKUN</h2>
+    </div>
+
+    <!-- Alerts -->
+    <div id="error-alert" class="hidden bg-red-100 text-red-800 text-sm px-4 py-3 rounded-md mb-3"></div>
+    <div id="success-alert" class="hidden bg-green-100 text-green-800 text-sm px-4 py-3 rounded-md mb-3"></div>
+
+    <!-- Form -->
+    <form id="register-form" class="space-y-4">
+      {% csrf_token %}
+      <input type="text" id="username" name="username"
+             class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 focus:outline-none"
+             placeholder="Username / Email" required>
+
+      <input type="password" id="password1" name="password1"
+             class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 focus:outline-none"
+             placeholder="Password" required>
+
+      <input type="password" id="password2" name="password2"
+             class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-400 focus:outline-none"
+             placeholder="Konfirmasi Password" required>
+
+      <div class="flex items-start space-x-2">
+        <input type="checkbox" id="terms" class="mt-1" required>
+        <label for="terms" class="text-sm text-slate-700">
+          Lihat <a href="#" class="text-rose-600 font-semibold hover:text-rose-700 transition">Daftar Ketentuan</a> yang berlaku
+        </label>
+      </div>
+
+      <button type="submit"
+              class="w-full bg-rose-600 text-white py-2 rounded-md font-semibold hover:bg-rose-700 transition-all duration-300">
+        SUBMIT
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("register-form");
+  const errorAlert = document.getElementById("error-alert");
+  const successAlert = document.getElementById("success-alert");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password1 = document.getElementById("password1").value;
+    const password2 = document.getElementById("password2").value;
+
+    if (password1 !== password2) {
+      errorAlert.textContent = "Passwords do not match!";
+      errorAlert.classList.remove("hidden");
+      successAlert.classList.add("hidden");
+      return;
+    }
+
+    try {
+      const response = await fetch("{% url 'authenticate:register' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          username: username,
+          password1: password1,
+          password2: password2
+        }),
+      });
+
+      if (response.ok) {
+        successAlert.textContent = "Registration successful! Redirecting to login...";
+        successAlert.classList.remove("hidden");
+        errorAlert.classList.add("hidden");
+        setTimeout(() => {
+          window.location.href = "{% url 'authenticate:login' %}";
+        }, 2000);
+      } else {
+        const data = await response.json();
+        errorAlert.textContent = data.message || "Registration failed. Please try again.";
+        errorAlert.classList.remove("hidden");
+        successAlert.classList.add("hidden");
+      }
+    } catch (err) {
+      errorAlert.textContent = "Terjadi kesalahan saat mengirim data.";
+      errorAlert.classList.remove("hidden");
+      successAlert.classList.add("hidden");
+    }
+  });
+});
+</script>
+
+{% endblock content %}
