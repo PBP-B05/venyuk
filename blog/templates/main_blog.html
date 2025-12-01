@@ -36,24 +36,29 @@
   <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
     <button id="btn-close-modal" class="absolute top-2 right-2 text-gray-500 hover:text-red-700">✕</button>
     <h2 class="text-xl font-bold mb-4 text-center">Add New Blog</h2>
-    <form id="blog-form">
-      {% csrf_token %}
-      <input type="text" name="title" placeholder="Title" class="w-full border rounded p-2 mb-2" required>
-      <textarea name="content" placeholder="Content" class="w-full border rounded p-2 mb-2" required></textarea>
-      {% if user.is_superuser %}
-  <select name="category" class="w-full border rounded p-2 mb-4">
-    <option value="e-sports">E-Sports</option>
-    <option value="sports">Sports</option>
-    <option value="community posts">Community Posts</option>
-  </select>
-{% else %}
-  <p class="bg-gray-50 p-2 rounded text-sm text-gray-600">
-    Posting to: <b class="text-red-700">Community Posts</b>
-  </p>
-{% endif %}
-      <input type="file" name="thumbnail" accept="image/*" class="w-full border rounded p-2 mb-4" />
-      <button type="submit" class="bg-red-700 text-white w-full py-2 rounded hover:bg-red-800">Submit</button>
-    </form>
+    <form id="blog-form" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="text" name="title" placeholder="Title" class="w-full border rounded p-2 mb-2" required>
+  <textarea name="content" placeholder="Content" class="w-full border rounded p-2 mb-2" required></textarea>
+
+  {% if user.is_superuser %}
+    <select name="category" class="w-full border rounded p-2 mb-4">
+      <option value="e-sports">E-Sports</option>
+      <option value="sports">Sports</option>
+      <option value="community posts">Community Posts</option>
+    </select>
+  {% else %}
+    <p class="bg-gray-50 p-2 rounded text-sm text-gray-600">
+      Posting to: <b class="text-red-700">Community Posts</b>
+    </p>
+  {% endif %}
+
+  <input type="url" name="thumbnail" placeholder="Thumbnail URL" class="w-full border rounded p-2 mb-4" />
+  
+  <button type="submit" class="bg-red-700 text-white w-full py-2 rounded hover:bg-red-800">
+    Submit
+  </button>
+</form>
   </div>
 </div>
 </div>
