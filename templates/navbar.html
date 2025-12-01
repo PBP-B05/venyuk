@@ -8,9 +8,9 @@
     <ul class="nav-links">
         <li><a href="{% url 'venue:home_section' %}">Venue</a></li>
         <li><a href="{% url 'promo:promo_list' %}">Promo</a></li>
-        <li><a href="#ven-shop">Ven-Shop</a></li>
-        <li><a href="#main-bareng">Main Bareng</a></li>
-        <li><a href="#versus">Versus</a></li>
+        <li><a href="{% url 'ven_shop:show_main' %}">Ven-Shop</a></li>
+        <li><a href="{% url 'match_up:show_matches' %}">Main Bareng</a></li>
+        <li><a href="{% url 'versus:list' %}">Versus</a></li>
         <li><a href="{% url 'blog:show_blogmain' %}">Blog</a></li> </ul>
     </ul>
 
@@ -24,8 +24,8 @@
 
             <!-- Dropdown Menu -->
             <div class="dropdown-menu hidden" id="dropdown-menu">
-                <a href="{% url 'authenticate:login' %}">👤 Profile</a>
-                <a href="{% url 'authenticate:login' %}">📊 Dashboard</a>
+                <a href="{% url 'authenticate:profile' %}">👤 Profile</a>
+                <a href="{% url 'venue:my_bookings' %}">📊 Dashboard</a>
                 <a href="{% url 'authenticate:logout' %}">🚪 Logout</a>
             </div>
         </div>
