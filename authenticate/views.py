@@ -10,6 +10,10 @@ import datetime
 from django.views.decorators.csrf import csrf_exempt
 from .forms import UserEditForm, UserProfileEditForm
 from django.contrib import messages
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
 
 
 # ==============================================================
@@ -171,3 +175,4 @@ def profile_edit(request):
     }
 
     return render(request, 'authenticate/profile_edit.html', context)
+
