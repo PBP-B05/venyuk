@@ -6,7 +6,7 @@ from django.core import serializers
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import HttpResponseForbidden
-\
+
 def show_blogmain(request):
     filter_type = request.GET.get("filter", "all")
 
@@ -118,14 +118,14 @@ def edit_blog(request, id):
         return HttpResponseForbidden("You are not allowed to edit this post.")
 
     if request.method == 'POST':
-        post_data = request.post.copy()
+        post_data = request.POST.copy()
         if not request.user.is_superuser:
-            post_data['category'] = "community posts"
-        form = BlogForm(request.POST or None, instance=blog)
+            post_data['category'] = blog.category
+        form = BlogForm(post_data,instance=blog)
 
         if form.is_valid():
             form.save()
-        return redirect('blog:show_blogmain') 
+            return redirect('blog:show_blogmain') 
     
     else:
         form = BlogForm(instance=blog)

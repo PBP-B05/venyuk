@@ -48,6 +48,7 @@
   </div>
 </div>
 
+
 <!-- Script -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -67,27 +68,42 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: {
           "X-CSRFToken": "{{ csrf_token }}",
           "Content-Type": "application/x-www-form-urlencoded",
+          // <-- Penting: tandai request ini sebagai AJAX supaya backend mengembalikan JSON
+          "X-Requested-With": "XMLHttpRequest",
         },
         body: new URLSearchParams({
           username: username,
           password: password
         }),
+        // redirect: "manual" // opsional: bisa gunakan ini kalau ingin tangani 3xx sendiri
       });
 
-      if (response.ok) {
-        successAlert.textContent = "Login berhasil! Mengalihkan...";
-        successAlert.classList.remove("hidden");
-        errorAlert.classList.add("hidden");
-        setTimeout(() => {
-          window.location.href = "{% url 'venue:home_section' %}";
-        }, 1500);
-      } else {
+      // Periksa apakah response mengandung JSON
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
         const data = await response.json();
-        errorAlert.textContent = data.message || "Login gagal. Silakan coba lagi.";
+
+        // Backend di views.py mengembalikan {"status": True/False, "message": "..."}
+        if (data.status === true) {
+          successAlert.textContent = data.message || "Login berhasil! Mengalihkan...";
+          successAlert.classList.remove("hidden");
+          errorAlert.classList.add("hidden");
+          setTimeout(() => {
+            window.location.href = "{% url 'venue:home_section' %}";
+          }, 1500);
+        } else {
+          errorAlert.textContent = data.message || "Login gagal. Silakan coba lagi.";
+          errorAlert.classList.remove("hidden");
+          successAlert.classList.add("hidden");
+        }
+      } else {
+        // Jika server merespon HTML (bukan JSON), anggap sebagai kegagalan:
+        errorAlert.textContent = "Login gagal. Silakan coba lagi.";
         errorAlert.classList.remove("hidden");
         successAlert.classList.add("hidden");
       }
     } catch (err) {
+      console.error("Login error:", err);
       errorAlert.textContent = "Terjadi kesalahan jaringan.";
       errorAlert.classList.remove("hidden");
       successAlert.classList.add("hidden");
