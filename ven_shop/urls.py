@@ -3,6 +3,8 @@ from ven_shop.views import show_main, create_product, show_product, show_xml, sh
 
 app_name = 'ven_shop'
 
+app_name = 'ven_shop'
+
 urlpatterns = [
     path('', show_main, name='show_main'),
     path('create-product/', create_product, name='create_product'),
