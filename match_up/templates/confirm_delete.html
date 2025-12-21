@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md text-center">
+    <h2 class="text-xl font-bold mb-4">Hapus Match?</h2>
+    <p>Apakah kamu yakin ingin menghapus match yang dibuat pada {{ match.start_time|date:"d M Y H:i" }}?</p>
+
+    <form method="POST" class="mt-4">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">
+            Ya, Hapus
+        </button>
+        <a href="{% url 'match_up:show_matches' %}" class="ml-2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">
+            Batal
+        </a>
+    </form>
+</div>
+{% endblock %}

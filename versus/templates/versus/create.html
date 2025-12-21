@@ -1,0 +1,124 @@
+{# templates/versus/create.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<!-- HERO -->
+<div class="w-full h-[200px] md:h-[240px] bg-cover bg-center"
+     style="background-image:url('{% static "images/hero_versus.jpg" %}');">
+  <div class="w-full h-full bg-black/20"></div>
+</div>
+
+<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 -mt-16 relative">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h1 class="text-2xl font-semibold mb-1">Buat Matchup</h1>
+    <p class="text-gray-500 mb-6">Lengkapi data di bawah, lalu submit.</p>
+
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+
+      <!-- Match Title -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Match Title</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.title.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Kategori Matchup -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Kategori</label>
+        {{ form.match_category }}
+        {% if form.match_category.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.match_category.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Sport -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Olahraga</label>
+        {{ form.sport }}
+        {% if form.sport.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.sport.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Start at -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Waktu mulai</label>
+        {{ form.start_at }}
+        {% if form.start_at.help_text %}
+          <p class="text-gray-500 text-xs mt-1">{{ form.start_at.help_text }}</p>
+        {% endif %}
+        {% if form.start_at.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.start_at.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Venue -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Venue</label>
+        {{ form.venue_name }}
+        {% if form.venue_name.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.venue_name.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Harga per orang -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Harga (per orang)</label>
+        {{ form.cost_per_person }}
+        {% if form.cost_per_person.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.cost_per_person.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Prize Pool -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Prize Pool (Rp)</label>
+        {{ form.prize_pool }}
+        {% if form.prize_pool.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.prize_pool.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      {# Opsional – hanya dirender jika field ada di form #}
+      {% if form.description %}
+      <!-- Deskripsi -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Deskripsi</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if form.poster_url %}
+      <!-- Poster Image (URL) -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Poster Image (URL)</label>
+        {{ form.poster_url }}
+        {% if form.poster_url.errors %}
+          <p class="text-rose-600 text-sm mt-1">{{ form.poster_url.errors.0 }}</p>
+        {% endif %}
+        <p class="text-xs text-gray-500 mt-1">Masukkan tautan gambar (contoh: https://.../poster.jpg)</p>
+      </div>
+      {% endif %}
+
+      <div class="flex items-center gap-3">
+        <a href="{% url 'versus:list' %}" class="px-4 py-2 rounded-lg bg-gray-100">Batal</a>
+        <button class="px-5 py-2 rounded-full text-white"
+                style="background-color:#D84040">
+          Buat Matchup
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+

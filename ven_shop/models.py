@@ -25,7 +25,7 @@ class Product(models.Model):
     rating = models.FloatField(default=0.0)
     stock = models.IntegerField()
     reviewer = models.IntegerField(default=0)
-    brand = models.CharField()
+    brand = models.CharField(max_length=255)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
     def __str__(self):

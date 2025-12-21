@@ -5,3 +5,7 @@ psycopg2-binary
 requests
 urllib3
 python-dotenv
+pandas
+openpyxl
+Pillow
+django-cors-headers
