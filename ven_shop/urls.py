@@ -1,5 +1,5 @@
 from django.urls import path
-from ven_shop.views import show_main, create_product, show_product, show_xml, show_json, show_xml_by_id, show_json_by_id, edit_product, delete_product, checkout_product, purchase_success, rating, purchase_history
+from ven_shop.views import show_main, create_product, show_product, show_xml, show_json, show_xml_by_id, show_json_by_id, edit_product, delete_product, checkout_product, purchase_success, rating, purchase_history, checkout_flutter, show_history_json, rating_flutter, create_product_flutter, delete_product_flutter, edit_product_flutter
 
 app_name = 'ven_shop'
 
@@ -17,4 +17,11 @@ urlpatterns = [
     path('success/<uuid:id>/', purchase_success, name='purchase_success'),  
     path('rate/<uuid:id>/', rating, name='submit_rating'), 
     path('purchase-history/', purchase_history, name='purchase_history'),
+    path('checkout-flutter/<uuid:id>/', checkout_flutter, name='checkout_flutter'),
+    path('history-json/', show_history_json, name='show_history_json'),
+    path('rating-flutter/<uuid:id>/', rating_flutter, name='rating_flutter'),
+    path('create-flutter/', create_product_flutter, name='create_product_flutter'),
+    path('edit-flutter/<uuid:id>/', edit_product_flutter, name='edit_product_flutter'),
+    path('delete-flutter/<uuid:id>/', delete_product_flutter, name='delete_product_flutter'),
+
 ]

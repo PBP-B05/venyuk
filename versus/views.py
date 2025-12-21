@@ -17,11 +17,14 @@ from .models import Challenge, Community, SportChoices
 
 
 # ==========================
-#  HELPER COMMUNITY & AUTH
+#  HELPERS (COMMUNITY & AUTH)
 # ==========================
 
 def _get_user_community(user) -> Community | None:
-    if not user.is_authenticated:
+    """
+    Community yang dimiliki user, atau yang di-join user.
+    """
+    if not user or not user.is_authenticated:
         return None
 
     owned = Community.objects.filter(owner=user).first()
@@ -29,31 +32,9 @@ def _get_user_community(user) -> Community | None:
     return owned or joined
 
 
-def _get_public_community() -> Community:
-    """
-    Community default ketika user belum punya / belum login.
-    Dipakai oleh API (Flutter) supaya kita bisa CRUD tanpa auth dulu.
-    """
-    public_owner, _ = User.objects.get_or_create(
-        username="public_community_owner",
-        defaults={"email": "public@example.com"},
-    )
-
-    public_comm, _ = Community.objects.get_or_create(
-        owner=public_owner,
-        name="Public Community",
-        defaults={
-            "primary_sport": SportChoices.FUTSAL,
-            "bio": "Default public community untuk pengguna guest / mobile.",
-        },
-    )
-    return public_comm
-
-
 def _ensure_user_community(request: HttpRequest):
     """
-    Helper khusus untuk WEB (HTML), tetap butuh user punya community.
-    Dipakai di create_challenge / join_challenge web.
+    Helper untuk WEB (HTML): user harus punya/join community dulu.
     """
     community = _get_user_community(request.user)
     if community is None:
@@ -64,11 +45,10 @@ def _ensure_user_community(request: HttpRequest):
         return None, redirect("versus:community_list")
     return community, None
 
+
 def _get_request_data(request: HttpRequest) -> dict:
     """
-    Samakan pola dengan proyek forum temanmu:
-    - Flutter CookieRequest.post => form-data (request.POST)
-    - Kadang JSON (request.body)
+    Support Flutter CookieRequest.post (form-data) dan JSON.
     """
     try:
         if request.content_type and "application/json" in request.content_type:
@@ -81,14 +61,13 @@ def _get_request_data(request: HttpRequest) -> dict:
 
 def _resolve_user_from_request(request: HttpRequest):
     """
-    Kalau session cookie gak kebawa, fallback pakai user_id / username
-    (persis seperti forum_section temanmu).
+    1) Kalau request.user sudah authenticated => pakai itu
+    2) Kalau cookie/session tidak kebawa => fallback dari body: user_id / username
     """
     if request.user.is_authenticated:
         return request.user
 
     data = _get_request_data(request)
-
     user_id = data.get("user_id")
     username = data.get("username")
 
@@ -111,8 +90,7 @@ def _resolve_user_from_request(request: HttpRequest):
 
 def _json_get_user_or_401(request: HttpRequest):
     """
-    Return (user, None) kalau dapat user,
-    atau (None, JsonResponse 401) kalau gak.
+    Return (user, None) kalau dapat user, atau (None, JsonResponse 401) kalau tidak.
     """
     user = _resolve_user_from_request(request)
     if user:
@@ -122,6 +100,7 @@ def _json_get_user_or_401(request: HttpRequest):
     return None, JsonResponse(
         {
             "ok": False,
+            "status": "error",
             "requires_login": True,
             "login_url": login_url,
             "message": "Silakan login terlebih dahulu.",
@@ -130,80 +109,40 @@ def _json_get_user_or_401(request: HttpRequest):
     )
 
 
-@csrf_exempt
-@require_POST
-def api_community_create(request: HttpRequest) -> JsonResponse:
-    user, err = _json_get_user_or_401(request)
-    if err:
-        return err
-
-    has_any = (
-        not user.is_superuser
-        and (
-            Community.objects.filter(owner=user).exists()
-            or Community.objects.filter(members=user).exists()
-        )
-    )
-    if has_any:
-        return JsonResponse(
-            {
-                "ok": False,
-                "message": "Kamu sudah tergabung di sebuah community, leave dulu jika ingin buat yang baru.",
-            },
-            status=400,
-        )
-
-    data = _get_request_data(request)
-    form = CommunityForm(data)
-    if not form.is_valid():
-        return JsonResponse(
-            {"ok": False, "message": "Data tidak valid.", "errors": form.errors},
-            status=400,
-        )
-
-    comm: Community = form.save(commit=False)
-    comm.owner = user
-    comm.save()
-    comm.members.add(user)
-
-    return JsonResponse(
-        {"ok": True, "message": "Community berhasil dibuat.", "community": _serialize_community(comm, user)}
-    )
-
-
-
-
-def _json_requires_community(request: HttpRequest):
+def _can_manage_challenge(user, ch: Challenge) -> bool:
     """
-    Untuk API (Flutter):
-    - Ambil community dari user (session atau user_id fallback)
-    - Kalau user belum punya community -> return error JSON (400)
+    Hanya owner dari community host (yang membuat matchup) atau superuser.
     """
-    user = getattr(request, "_api_user", None) or _get_api_user(request)
     if not user:
-        return None, JsonResponse(
-            {
-                "ok": False,
-                "message": "Silakan login terlebih dahulu.",
-            },
-            status=401,
-        )
-
-    community = _get_user_community(user)
-    if community is None:
-        return None, JsonResponse(
-            {
-                "ok": False,
-                "requires_community": True,
-                "message": "Kamu perlu membuat atau join community terlebih dahulu.",
-            },
-            status=400,
-        )
-
-    return community, None
+        return False
+    return bool(user.is_superuser or (ch.host_id and ch.host.owner_id == user.id))
 
 
-def _serialize_challenge(ch: Challenge) -> dict:
+# ==========================
+#  SERIALIZERS
+# ==========================
+
+def _serialize_community(comm: Community, user) -> dict:
+    is_owner = bool(user and comm.owner_id == getattr(user, "id", None))
+    is_member = bool(
+        user and comm.members.filter(pk=getattr(user, "id", None)).exists()
+    )
+
+    return {
+        "id": comm.pk,
+        "name": comm.name,
+        "primary_sport": comm.primary_sport,
+        "primary_sport_label": comm.get_primary_sport_display(),
+        "bio": comm.bio or "",
+        "owner_username": comm.owner.username if comm.owner_id else "",
+        # NOTE: owner biasanya sudah dimasukkan ke members => pakai count() aja (biar gak dobel)
+        "total_members": comm.members.count(),
+        "is_owner": is_owner,
+        "is_member": is_member,
+    }
+
+
+def _serialize_challenge(ch: Challenge, user=None) -> dict:
     return {
         "id": ch.pk,
         "title": ch.title,
@@ -218,8 +157,8 @@ def _serialize_challenge(ch: Challenge) -> dict:
         "prize_pool": ch.prize_pool or 0,
         "venue_name": ch.venue_name or "",
         "display_venue_name": ch.display_venue_name,
-        "players_joined": ch.players_joined or 0,   # jumlah community
-        "max_players": ch.max_players,              # kapasitas community
+        "players_joined": ch.players_joined or 0,
+        "max_players": ch.max_players,
         "detail_url": ch.get_absolute_url(),
         # Community info
         "host_id": ch.host_id,
@@ -228,34 +167,11 @@ def _serialize_challenge(ch: Challenge) -> dict:
         "opponent_name": ch.opponent.name if ch.opponent_id else "",
         "has_opponent": ch.opponent_id is not None,
         "stage_community_size": ch.get_stage_community_size(),
-        # ====== tambahan untuk mobile ======
+        # tambahan mobile
         "description": ch.description or "",
         "poster_url": ch.banner_url or "",
-    }
-
-# --- Helper serialisasi Community untuk API mobile ---
-
-def _serialize_community(comm: Community, user) -> dict:
-    """
-    Serialisasi objek Community ke dict JSON-friendly.
-    Param kedua cukup user (boleh None), supaya bisa dipakai baik
-    di view HTML maupun API JSON.
-    """
-    is_owner = bool(user and comm.owner_id == getattr(user, "id", None))
-    is_member = bool(
-        user and comm.members.filter(pk=getattr(user, "id", None)).exists()
-    )
-
-    return {
-        "id": comm.pk,
-        "name": comm.name,
-        "primary_sport": comm.primary_sport,
-        "primary_sport_label": comm.get_primary_sport_display(),
-        "bio": comm.bio or "",
-        "owner_username": comm.owner.username if comm.owner_id else "",
-        "total_members": comm.members.count(),
-        "is_owner": is_owner,
-        "is_member": is_member,
+        # ✅ permission flag untuk Flutter
+        "can_manage": _can_manage_challenge(user, ch) if user else False,
     }
 
 
@@ -263,30 +179,22 @@ def _perform_join_for_community(ch: Challenge, community: Community):
     if ch.status != Challenge.Status.OPEN:
         return False, "Matchup sudah tidak open."
 
-    # Kapasitas community sesuai kategori
     cap = ch.get_stage_community_size() or 2
 
-    # Slot sudah penuh
     if ch.players_joined >= cap:
         return False, "Slot community untuk matchup ini sudah penuh."
 
-    # Host tidak boleh join sebagai community tambahan
     if ch.host_id == community.id:
         return False, "Community kamu adalah host matchup ini."
 
-    # Community ini sudah jadi opponent utama
     if ch.opponent_id == community.id:
         return False, "Community kamu sudah terdaftar sebagai opponent di matchup ini."
 
-    # Kalau belum ada opponent, set community ini sebagai opponent 'utama'
     if ch.opponent_id is None:
         ch.opponent = community
 
-    # Tambah jumlah community yang ikut
     ch.players_joined = (ch.players_joined or 0) + 1
     ch.save()
-
-    # Cek apakah perlu di-close (lihat logic di models.py)
     ch.try_close()
 
     return True, f"Community kamu berhasil join. Total community: {ch.players_joined}/{cap}."
@@ -294,9 +202,7 @@ def _perform_join_for_community(ch: Challenge, community: Community):
 
 def _ensure_host_owner(request: HttpRequest, ch: Challenge) -> bool:
     u = request.user
-    return bool(
-        u.is_authenticated and (u.is_superuser or ch.host.owner_id == u.id)
-    )
+    return bool(u.is_authenticated and (u.is_superuser or ch.host.owner_id == u.id))
 
 
 # ==========================
@@ -428,115 +334,7 @@ def join_challenge(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 # ==========================
-#  API UNTUK FLUTTER
-# ==========================
-
-@require_GET
-def api_challenge_list(request: HttpRequest) -> JsonResponse:
-    sport_q = (request.GET.get("sport") or "").strip().lower()
-
-    qs = Challenge.objects.all().order_by("start_at")
-    if sport_q:
-        qs = qs.filter(sport=sport_q)
-
-    data = [_serialize_challenge(ch) for ch in qs]
-    return JsonResponse(data, safe=False)
-
-
-@require_GET
-def api_challenge_detail(request: HttpRequest, pk: int) -> JsonResponse:
-    ch = get_object_or_404(Challenge, pk=pk)
-    return JsonResponse(_serialize_challenge(ch))
-
-
-@csrf_exempt
-def api_join_challenge(request: HttpRequest, pk: int) -> JsonResponse:
-    """
-    Join matchup dari Flutter.
-
-    Mirip pola add_discussion_json di tutorial:
-    - Bisa pakai user login (session)
-    - Atau kirim community_id lewat body
-    - Kalau tetap tidak ada -> pakai Public Community (guest mode)
-    """
-    if request.method != "POST":
-        return JsonResponse(
-            {"status": "error", "message": "Invalid request method."},
-            status=405,
-        )
-
-    ch = get_object_or_404(Challenge, pk=pk)
-
-    # 1. Coba ambil community dari user login
-    community: Community | None = _get_user_community(request.user)
-
-    # 2. Fallback: ambil community_id dari body (JSON / form)
-    if community is None:
-        try:
-            if request.content_type == "application/json":
-                raw = request.body.decode("utf-8") or "{}"
-                data = json.loads(raw)
-            else:
-                data = request.POST
-        except Exception:
-            data = {}
-
-        community_id = data.get("community_id")
-        if community_id:
-            try:
-                community = Community.objects.get(pk=community_id)
-            except Community.DoesNotExist:
-                return JsonResponse(
-                    {
-                        "status": "error",
-                        "message": "Community tidak ditemukan.",
-                    },
-                    status=400,
-                )
-
-    # 3. Fallback terakhir: pakai Public Community (guest)
-    if community is None:
-        community = _get_public_community()
-
-    ok, msg = _perform_join_for_community(ch, community)
-    if not ok:
-        return JsonResponse(
-            {"status": "error", "message": msg},
-            status=400,
-        )
-
-    return JsonResponse(
-        {
-            "status": "success",
-            "message": msg,
-            "challenge": _serialize_challenge(ch),
-        },
-        status=200,
-    )
-
-
-@csrf_exempt
-@require_POST
-def api_create_challenge(request: HttpRequest) -> JsonResponse:
-    user, err = _json_get_user_or_401(request)
-    if err:
-        return err
-
-    # community user kalau ada, kalau tidak fallback public
-    community = _get_user_community(user) or _get_public_community()
-
-    data = _get_request_data(request)
-    form = ChallengeCreateForm(data, community=community)
-    if not form.is_valid():
-        return JsonResponse({"ok": False, "message": "Data tidak valid.", "errors": form.errors}, status=400)
-
-    ch = form.save_new()
-    return JsonResponse({"ok": True, "message": "Matchup berhasil dibuat.", "challenge": _serialize_challenge(ch)})
-
-
-
-# ==========================
-#  COMMUNITY WEB VIEWS
+#  COMMUNITY WEB VIEWS (HTML)
 # ==========================
 
 @login_required(login_url="/authenticate/login/")
@@ -583,6 +381,7 @@ def community_detail(request: HttpRequest, pk: int) -> HttpResponse:
         },
     )
 
+
 @login_required(login_url="/authenticate/login/")
 def create_community(request: HttpRequest) -> HttpResponse:
     has_any = (
@@ -592,7 +391,6 @@ def create_community(request: HttpRequest) -> HttpResponse:
             or Community.objects.filter(members=request.user).exists()
         )
     )
-
     if has_any:
         messages.info(
             request,
@@ -616,11 +414,7 @@ def create_community(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "versus/community_form.html",
-        {
-            "form": form,
-            "is_edit": False,
-            "community": None,
-        },
+        {"form": form, "is_edit": False, "community": None},
     )
 
 
@@ -644,11 +438,7 @@ def update_community(request: HttpRequest, pk: int) -> HttpResponse:
     return render(
         request,
         "versus/community_form.html",
-        {
-            "form": form,
-            "is_edit": True,
-            "community": community,
-        },
+        {"form": form, "is_edit": True, "community": community},
     )
 
 
@@ -663,10 +453,7 @@ def delete_community(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST":
         name = community.name
         community.delete()
-        messages.success(
-            request,
-            f"Community '{name}' berhasil dihapus.",
-        )
+        messages.success(request, f"Community '{name}' berhasil dihapus.")
         return redirect("versus:community_list")
 
     return render(
@@ -686,7 +473,6 @@ def join_community(request: HttpRequest, pk: int) -> HttpResponse:
             or Community.objects.filter(members=request.user).exists()
         )
     )
-
     if has_any:
         messages.error(
             request,
@@ -714,7 +500,6 @@ def leave_community(request: HttpRequest) -> HttpResponse:
 
     if my_owned and my_owned == current:
         other_members = current.members.exclude(pk=request.user.pk)
-
         if other_members.exists():
             new_owner = other_members.first()
             current.owner = new_owner
@@ -738,37 +523,165 @@ def leave_community(request: HttpRequest) -> HttpResponse:
 
     return redirect("versus:community_list")
 
-# ---------- COMMUNITY API UNTUK FLUTTER (BERSIH) ----------
+
+# ==========================
+#  API CHALLENGE (FLUTTER)
+# ==========================
+
+@require_GET
+def api_challenge_list(request: HttpRequest) -> JsonResponse:
+    sport_q = (request.GET.get("sport") or "").strip().lower()
+
+    qs = Challenge.objects.all().order_by("start_at")
+    if sport_q:
+        qs = qs.filter(sport=sport_q)
+
+    user = _resolve_user_from_request(request)  # bisa None/anon
+    data = [_serialize_challenge(ch, user=user) for ch in qs]
+    return JsonResponse(data, safe=False)
+
+
+@require_GET
+def api_challenge_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    ch = get_object_or_404(Challenge, pk=pk)
+    user = _resolve_user_from_request(request)  # bisa None/anon
+    return JsonResponse(_serialize_challenge(ch, user=user))
+
+
+@csrf_exempt
+@require_POST
+def api_create_challenge(request: HttpRequest) -> JsonResponse:
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
+
+    community = _get_user_community(user)
+    if not community:
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Kamu perlu membuat/join community terlebih dahulu."},
+            status=400,
+        )
+
+    data = _get_request_data(request)
+    form = ChallengeCreateForm(data, community=community)
+    if not form.is_valid():
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Data tidak valid.", "errors": form.errors},
+            status=400,
+        )
+
+    ch = form.save_new()
+    return JsonResponse(
+        {"ok": True, "status": "success", "message": "Matchup berhasil dibuat.", "challenge": _serialize_challenge(ch, user=user)}
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_update_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    ✅ UPDATE matchup (HANYA owner dari host community / superuser).
+    """
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
+
+    ch = get_object_or_404(Challenge, pk=pk)
+
+    if not _can_manage_challenge(user, ch):
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Kamu tidak memiliki akses untuk mengedit matchup ini."},
+            status=403,
+        )
+
+    data = _get_request_data(request)
+    form = ChallengeCreateForm(data, community=ch.host)
+    if not form.is_valid():
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Data tidak valid.", "errors": form.errors},
+            status=400,
+        )
+
+    form.apply_to_instance(ch)
+    return JsonResponse(
+        {"ok": True, "status": "success", "message": "Matchup berhasil diupdate.", "challenge": _serialize_challenge(ch, user=user)}
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_delete_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    ✅ DELETE matchup (HANYA owner dari host community / superuser).
+    """
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
+
+    ch = get_object_or_404(Challenge, pk=pk)
+
+    if not _can_manage_challenge(user, ch):
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Kamu tidak memiliki akses untuk menghapus matchup ini."},
+            status=403,
+        )
+
+    title = ch.title
+    ch.delete()
+    return JsonResponse(
+        {"ok": True, "status": "success", "message": f"Matchup '{title}' berhasil dihapus."},
+        status=200,
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_join_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
+
+    community = _get_user_community(user)
+    if not community:
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Kamu perlu membuat/join community terlebih dahulu."},
+            status=400,
+        )
+
+    ch = get_object_or_404(Challenge, pk=pk)
+
+    ok, msg = _perform_join_for_community(ch, community)
+    if not ok:
+        return JsonResponse({"ok": False, "status": "error", "message": msg}, status=400)
+
+    return JsonResponse(
+        {"ok": True, "status": "success", "message": msg, "challenge": _serialize_challenge(ch, user=user)},
+        status=200,
+    )
+
+
+# ==========================
+#  API COMMUNITY (FLUTTER)
+# ==========================
 
 @require_GET
 def api_community_list(request: HttpRequest) -> JsonResponse:
     """
     List semua community + info community yang sedang user ikuti.
     Bisa diakses guest (user anonim).
-    Response:
-    {
-      "ok": true,
-      "my_owned": {...} | null,
-      "my_joined": {...} | null,
-      "my_current": {...} | null,
-      "communities": [ {...}, {...} ]
-    }
     """
     user = request.user if request.user.is_authenticated else None
 
-    if user:
-        my_owned = Community.objects.filter(owner=user).first()
-        my_joined = Community.objects.filter(members=user).first()
-    else:
-        my_owned = None
-        my_joined = None
-
+    my_owned = Community.objects.filter(owner=user).first() if user else None
+    my_joined = Community.objects.filter(members=user).first() if user else None
     my_current = my_owned or my_joined
+
     communities = Community.objects.all().order_by("name")
 
     return JsonResponse(
         {
             "ok": True,
+            "status": "success",
             "my_owned": _serialize_community(my_owned, user) if my_owned else None,
             "my_joined": _serialize_community(my_joined, user) if my_joined else None,
             "my_current": _serialize_community(my_current, user) if my_current else None,
@@ -795,18 +708,13 @@ def api_community_detail(request: HttpRequest, pk: int) -> JsonResponse:
     challenges_hosted = community.hosted_challenges.all().order_by("start_at")
     challenges_joined = community.joined_challenges.all().order_by("start_at")
 
-    comm_data = _serialize_community(community, user)
-
     return JsonResponse(
         {
             "ok": True,
-            "community": comm_data,
-            "challenges_hosted": [
-                _serialize_challenge(ch) for ch in challenges_hosted
-            ],
-            "challenges_joined": [
-                _serialize_challenge(ch) for ch in challenges_joined
-            ],
+            "status": "success",
+            "community": _serialize_community(community, user),
+            "challenges_hosted": [_serialize_challenge(ch, user=user) for ch in challenges_hosted],
+            "challenges_joined": [_serialize_challenge(ch, user=user) for ch in challenges_joined],
         }
     )
 
@@ -827,10 +735,7 @@ def api_community_create(request: HttpRequest) -> JsonResponse:
     )
     if has_any:
         return JsonResponse(
-            {
-                "ok": False,
-                "message": "Kamu sudah tergabung di sebuah community, leave dulu jika ingin buat yang baru.",
-            },
+            {"ok": False, "status": "error", "message": "Kamu sudah tergabung di sebuah community, leave dulu jika ingin buat yang baru."},
             status=400,
         )
 
@@ -838,7 +743,7 @@ def api_community_create(request: HttpRequest) -> JsonResponse:
     form = CommunityForm(data)
     if not form.is_valid():
         return JsonResponse(
-            {"ok": False, "message": "Data tidak valid.", "errors": form.errors},
+            {"ok": False, "status": "error", "message": "Data tidak valid.", "errors": form.errors},
             status=400,
         )
 
@@ -848,80 +753,49 @@ def api_community_create(request: HttpRequest) -> JsonResponse:
     comm.members.add(user)
 
     return JsonResponse(
-        {"ok": True, "message": "Community berhasil dibuat.", "community": _serialize_community(comm, user)}
+        {"ok": True, "status": "success", "message": "Community berhasil dibuat.", "community": _serialize_community(comm, user)}
     )
-
 
 
 @csrf_exempt
 @require_POST
 def api_community_update(request: HttpRequest, pk: int) -> JsonResponse:
-    """
-    Update community (hanya owner / superuser).
-    """
-    not_auth = _json_requires_login(request)
-    if not_auth:
-        return not_auth
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
 
-    user = request.user
     comm = get_object_or_404(Community, pk=pk)
-
     if not (user.is_superuser or comm.owner_id == user.id):
-        return JsonResponse(
-            {"ok": False, "message": "Kamu bukan owner community ini."},
-            status=403,
-        )
+        return JsonResponse({"ok": False, "status": "error", "message": "Kamu bukan owner community ini."}, status=403)
 
-    try:
-        data = json.loads(request.body.decode("utf-8") or "{}")
-    except Exception:
-        data = request.POST
-
+    data = _get_request_data(request)
     form = CommunityForm(data, instance=comm)
     if not form.is_valid():
         return JsonResponse(
-            {
-                "ok": False,
-                "message": "Data tidak valid.",
-                "errors": form.errors,
-            },
+            {"ok": False, "status": "error", "message": "Data tidak valid.", "errors": form.errors},
             status=400,
         )
 
     comm = form.save()
     return JsonResponse(
-        {
-            "ok": True,
-            "message": "Community berhasil diupdate.",
-            "community": _serialize_community(comm, user),
-        }
+        {"ok": True, "status": "success", "message": "Community berhasil diupdate.", "community": _serialize_community(comm, user)}
     )
 
 
 @csrf_exempt
 @require_POST
 def api_community_delete(request: HttpRequest, pk: int) -> JsonResponse:
-    """
-    Delete community (hanya owner / superuser).
-    """
-    not_auth = _json_requires_login(request)
-    if not_auth:
-        return not_auth
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
 
-    user = request.user
     comm = get_object_or_404(Community, pk=pk)
-
     if not (user.is_superuser or comm.owner_id == user.id):
-        return JsonResponse(
-            {"ok": False, "message": "Kamu bukan owner community ini."},
-            status=403,
-        )
+        return JsonResponse({"ok": False, "status": "error", "message": "Kamu bukan owner community ini."}, status=403)
 
     name = comm.name
     comm.delete()
-    return JsonResponse(
-        {"ok": True, "message": f"Community '{name}' dihapus."}
-    )
+    return JsonResponse({"ok": True, "status": "success", "message": f"Community '{name}' dihapus."})
 
 
 @csrf_exempt
@@ -940,7 +814,7 @@ def api_community_join(request: HttpRequest, pk: int) -> JsonResponse:
     )
     if has_any:
         return JsonResponse(
-            {"ok": False, "message": "Kamu sudah tergabung di community lain. Leave dulu kalau mau pindah."},
+            {"ok": False, "status": "error", "message": "Kamu sudah tergabung di community lain. Leave dulu kalau mau pindah."},
             status=400,
         )
 
@@ -948,7 +822,7 @@ def api_community_join(request: HttpRequest, pk: int) -> JsonResponse:
     comm.members.add(user)
 
     return JsonResponse(
-        {"ok": True, "message": f"Kamu berhasil join community {comm.name}.", "community": _serialize_community(comm, user)}
+        {"ok": True, "status": "success", "message": f"Kamu berhasil join community {comm.name}.", "community": _serialize_community(comm, user)}
     )
 
 
@@ -964,7 +838,7 @@ def api_community_leave(request: HttpRequest) -> JsonResponse:
     current = my_owned or my_joined
 
     if not current:
-        return JsonResponse({"ok": False, "message": "Kamu belum tergabung di community manapun."}, status=400)
+        return JsonResponse({"ok": False, "status": "error", "message": "Kamu belum tergabung di community manapun."}, status=400)
 
     if my_owned and my_owned == current:
         other_members = current.members.exclude(pk=user.pk)
@@ -983,5 +857,4 @@ def api_community_leave(request: HttpRequest) -> JsonResponse:
         current.members.remove(user)
         msg = "Kamu telah keluar dari community."
 
-    return JsonResponse({"ok": True, "message": msg})
-
+    return JsonResponse({"ok": True, "status": "success", "message": msg})
