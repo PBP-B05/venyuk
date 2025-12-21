@@ -12,6 +12,47 @@ from promo.models import Promo
 from django.utils import timezone
 from datetime import datetime, date
 from django.db import IntegrityError, transaction
+import requests
+
+def venue_api(request):
+    venues = Venue.objects.all()
+
+    # ⬇️ INI YANG HILANG
+    venues = apply_filters(venues, request)
+    
+    data = [
+        {
+            "id": str(v.id),
+            "name": v.name,
+            "category": v.get_categories_display_list(),
+            "address": v.address,
+            "price": v.price,
+            "rating": v.rating,
+            "image_url": v.image_url,
+            "is_available": v.is_available,
+        }
+        for v in venues
+    ]
+    return JsonResponse(data, safe=False)
+
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
 
 # ==============================================================
 # AVAILABILITY CHECK API

@@ -56,51 +56,53 @@ document.addEventListener("DOMContentLoaded", () => {
         const username = document.getElementById("username").value;
         const password = document.getElementById("password").value;
 
-        try {
-            const response = await fetch("{% url 'authenticate:login' %}", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": "{{ csrf_token }}",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    // HEADER PENTING untuk komunikasi AJAX dengan Django
-                    "X-Requested-With": "XMLHttpRequest", 
-                },
-                body: new URLSearchParams({
-                    username: username,
-                    password: password
-                }),
-            });
+    try {
+      const response = await fetch("{% url 'authenticate:login' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/x-www-form-urlencoded",
+          // <-- Penting: tandai request ini sebagai AJAX supaya backend mengembalikan JSON
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: new URLSearchParams({
+          username: username,
+          password: password
+        }),
+        // redirect: "manual" // opsional: bisa gunakan ini kalau ingin tangani 3xx sendiri
+      });
 
-            if (response.ok) {
-                // KASUS SUKSES (Status 200-299)
-                successAlert.textContent = "Login berhasil! Mengalihkan...";
-                successAlert.classList.remove("hidden");
-                errorAlert.classList.add("hidden");
-                setTimeout(() => {
-                    window.location.href = "{% url 'venue:home_section' %}";
-                }, 1500);
-            } else {
-                // KASUS GAGAL (Status 400, 401, dll.)
-                let errorMessage = "Login gagal. Silakan coba lagi.";
-                try {
-                    // Coba baca pesan error JSON
-                    const data = await response.json();
-                    errorMessage = data.message || errorMessage;
-                } catch (e) {
-                    // Gagal parse JSON (misal, server mengembalikan HTML error 500)
-                    errorMessage = `Login gagal. Status: ${response.status}. Mohon periksa konsol.`;
-                }
-                errorAlert.textContent = errorMessage;
-                errorAlert.classList.remove("hidden");
-                successAlert.classList.add("hidden");
-            }
-        } catch (err) {
-            // KASUS ERROR JARINGAN
-            errorAlert.textContent = "Terjadi kesalahan jaringan.";
-            errorAlert.classList.remove("hidden");
-            successAlert.classList.add("hidden");
+      // Periksa apakah response mengandung JSON
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+
+        // Backend di views.py mengembalikan {"status": True/False, "message": "..."}
+        if (data.status === true) {
+          successAlert.textContent = data.message || "Login berhasil! Mengalihkan...";
+          successAlert.classList.remove("hidden");
+          errorAlert.classList.add("hidden");
+          setTimeout(() => {
+            window.location.href = "{% url 'venue:home_section' %}";
+          }, 1500);
+        } else {
+          errorAlert.textContent = data.message || "Login gagal. Silakan coba lagi.";
+          errorAlert.classList.remove("hidden");
+          successAlert.classList.add("hidden");
         }
-    });
+      } else {
+        // Jika server merespon HTML (bukan JSON), anggap sebagai kegagalan:
+        errorAlert.textContent = "Login gagal. Silakan coba lagi.";
+        errorAlert.classList.remove("hidden");
+        successAlert.classList.add("hidden");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      errorAlert.textContent = "Terjadi kesalahan jaringan.";
+      errorAlert.classList.remove("hidden");
+      successAlert.classList.add("hidden");
+    }
+  });
 });
 </script>
 

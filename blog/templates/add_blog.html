@@ -21,13 +21,13 @@
   <div class="text-center text-gray-700 mb-6 text-lg">
     Share your thoughts, stories, or experiences with the Venyuk community!
   </div>
-  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow-md p-8">
-    {% csrf_token %}
+<form method="POST" class="bg-white rounded-lg shadow-md p-8"></form>
+  {% csrf_token %}
     <div class="space-y-6">
       {% for field in form %}
         {% if field.name == 'category' %}
-                    {% if user.is_superuser %}
-                    <div>
+            {% if user.is_superuser %}
+            <div>
               <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
                 {{ field.label }}
               </label>
