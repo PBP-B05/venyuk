@@ -12,33 +12,47 @@ from promo.models import Promo
 from django.utils import timezone
 from datetime import datetime, date
 from django.db import IntegrityError, transaction
-# Di file venue/views.py
-from django.http import JsonResponse
-from .models import Venue
+import requests
 
-from django.http import JsonResponse
-from .models import Venue
-
-def venue_list_json(request):
+def venue_api(request):
     venues = Venue.objects.all()
-    data = []
-    for v in venues:
-        # Kita ambil kategori pertama jika ada koma, atau kosong
-        cat_list = v.get_categories_list()
-        primary_cat = cat_list[0] if cat_list else "Umum"
 
-        data.append({
-            'pk': v.pk,  # ID Venue (UUID)
-            'fields': {
-                'name': v.name,
-                'address': v.address,
-                'category': primary_cat, # Kirim kategori untuk ditampilkan di UI
-                'price': v.price,
-                'rating': v.rating,
-                'image_url': v.get_image_url(), # <--- PENTING: Pakai method get_image_url()
-            }
-        })
+    # ⬇️ INI YANG HILANG
+    venues = apply_filters(venues, request)
+    
+    data = [
+        {
+            "id": str(v.id),
+            "name": v.name,
+            "category": v.get_categories_display_list(),
+            "address": v.address,
+            "price": v.price,
+            "rating": v.rating,
+            "image_url": v.image_url,
+            "is_available": v.is_available,
+        }
+        for v in venues
+    ]
     return JsonResponse(data, safe=False)
+
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
 
 # ==============================================================
 # AVAILABILITY CHECK API

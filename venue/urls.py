@@ -14,5 +14,6 @@ urlpatterns = [
     path('availability/<uuid:venue_id>/', views.get_venue_availability, name='get_venue_availability'),
     path('json/', views.get_venues_json, name='venues_json'),
     path('json/<uuid:id>/', views.get_venue_by_id, name='venue_json'),
-    path('venue/json/', views.venue_list_json, name='venue_list_json'),
+    path('venue_api/', views.venue_api, name='venue_api'),
+    path('proxy-image/', views.proxy_image, name='proxy_image'),
 ]

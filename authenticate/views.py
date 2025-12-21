@@ -10,49 +10,95 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from .forms import UserEditForm, UserProfileEditForm
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth.models import User
+import json
+
 
 # ==================================================
-#  1. LOGIN API (KHUSUS FLUTTER)
+# LOGIN API (FLUTTER)
 # ==================================================
 @csrf_exempt
 def login_api(request):
-    if request.method == 'POST':
-        # Coba ambil data dari JSON (Flutter biasanya kirim JSON)
-        try:
-            data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
-        except:
-            # Fallback: Jika gagal parse JSON, coba ambil dari Form Data standar
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+    if request.method != "POST":
+        return JsonResponse({
+            "status": False,
+            "message": "Invalid request method."
+        }, status=405)
 
-        # Validasi kelengkapan data
-        if not username or not password:
-            return JsonResponse({
-                "status": False,
-                "message": "Username dan password harus diisi."
-            }, status=400)
+    username = request.POST.get("username")
+    password = request.POST.get("password")
 
-        # Cek kredensial
-        user = authenticate(username=username, password=password)
+    if not username or not password:
+        return JsonResponse({
+            "status": False,
+            "message": "Username and password are required."
+        }, status=400)
 
-        if user is not None and user.is_active:
-            # Login session (Penting buat pbp_django_auth)
-            auth_login(request, user)
-            
-            return JsonResponse({
-                "status": True,
-                "username": user.username,
-                "message": "Login berhasil!"
-            }, status=200)
-        else:
-            return JsonResponse({
-                "status": False,
-                "message": "Username atau password salah."
-            }, status=401)
+    user = authenticate(username=username, password=password)
 
-    return JsonResponse({"status": False, "message": "Method not allowed"}, status=405)
+    if user is not None and user.is_active:
+        auth_login(request, user)
+        return JsonResponse({
+            "status": True,
+            "username": user.username,
+            "message": "Login successful!"
+        }, status=200)
+
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid username or password."
+    }, status=401)
+
+
+# ==================================================
+# REGISTER API (FLUTTER)
+# ==================================================
+@csrf_exempt
+def register_api(request):
+    if request.method != "POST":
+        return JsonResponse({
+            "status": False,
+            "message": "Invalid request method."
+        }, status=405)
+
+    data = json.loads(request.body)
+    username = data.get("username")
+    password1 = data.get("password1")
+    password2 = data.get("password2")
+
+    if not username or not password1 or not password2:
+        return JsonResponse({
+            "status": False,
+            "message": "All fields are required."
+        }, status=400)
+
+    if password1 != password2:
+        return JsonResponse({
+            "status": False,
+            "message": "Passwords do not match."
+        }, status=400)
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({
+            "status": False,
+            "message": "Username already exists."
+        }, status=400)
+
+    user = User.objects.create_user(
+        username=username,
+        password=password1
+    )
+    user.save()
+
+    return JsonResponse({
+        "status": True,
+        "username": user.username,
+        "message": "User created successfully!"
+    }, status=201)
 
 
 # ==================================================
@@ -144,7 +190,14 @@ def register(request):
             messages.success(request, 'Akun berhasil dibuat! Silakan login.')
             return redirect('authenticate:login')
         else:
-            messages.error(request, "Registrasi gagal. Cek inputan Anda.")
+            errors = form.errors.as_json()
+            print("Registration errors:", errors)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": False,
+                    "message": "Invalid form submission.",
+                    "errors": errors
+                }, status=400)
     else:
         form = UserCreationForm()
     return render(request, 'authenticate/register.html', {'form': form})

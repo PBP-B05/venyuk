@@ -20,7 +20,11 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "10.0.2.2", "muhammad-fattan-venyuk.pbp.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "muhammad-fattan-venyuk.pbp.cs.ui.ac.id","10.0.2.2"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://muhammad-fattan-venyuk.pbp.cs.ui.ac.id"
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -31,7 +35,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'corsheaders',  # App untuk menangani CORS (Wajib ada)
     'main',
     'venue',
     'ven_shop',
@@ -40,18 +43,20 @@ INSTALLED_APPS = [
     'blog',
     'versus',
     'authenticate',
+    'corsheaders',
 ]
 
 # URUTAN MIDDLEWARE YANG BENAR (JANGAN DIUBAH)
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',                   # 1. Paling Atas (Wajib)
-    'django.middleware.security.SecurityMiddleware',           # 2. Security
-    'django.contrib.sessions.middleware.SessionMiddleware',    # 3. Session (Wajib sebelum Auth)
-    'django.middleware.common.CommonMiddleware',               # 4. Common
-    'django.middleware.csrf.CsrfViewMiddleware',               # 5. CSRF
-    'django.contrib.auth.middleware.AuthenticationMiddleware', # 6. Auth (Wajib setelah Session)
-    'django.contrib.messages.middleware.MessageMiddleware',    # 7. Messages
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # 8. Clickjacking
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'venyuk.urls'
@@ -73,7 +78,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'venyuk.wsgi.application'
-
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
 
 # Database
 if PRODUCTION:
@@ -143,38 +153,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# =================================================================
-# KONFIGURASI CORS & SESSION (FIXED UNTUK CHROME FLUTTER WEB)
-# =================================================================
-
-# 1. Supaya Chrome mau simpan Cookie Login (Wajib True)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-
-# 2. Supaya tidak diblokir Chrome karena 'Wildcard' (Wajib False jika Credentials=True)
-CORS_ALLOW_ALL_ORIGINS = False
-
-# 3. Whitelist Menggunakan REGEX (Pola)
-# Ini mengizinkan Flutter Web jalan di PORT BERAPAPUN (localhost:xxx atau 127.0.0.1:xxx)
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://localhost:[0-9]+$",
-    r"^http://127\.0\.0\.1:[0-9]+$",
-]
-
-# 4. Daftar Host yang dipercaya untuk CSRF
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://10.0.2.2:8000", 
-    "https://muhammad-fattan-venyuk.pbp.cs.ui.ac.id",
-]
-
-# 5. Setting Cookie agar jalan di HTTP (Localhost)
-# Karena kita dev di http://, Secure harus False.
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_HTTPONLY = False 
-
-# Tambahan: Setting Auth
-VERSUS_AUTH_REQUIRED = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
