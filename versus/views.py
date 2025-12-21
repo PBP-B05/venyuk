@@ -114,7 +114,6 @@ def _can_manage_challenge(user, ch: Challenge):
         return False
     return bool(user.is_superuser or (ch.host_id and ch.host.owner_id == user.id))
 
-
 #  SERIALIZERS
 def _serialize_community(comm: Community, user):
     is_owner = bool(user and comm.owner_id == getattr(user, "id", None))
@@ -358,7 +357,6 @@ def join_challenge(request: HttpRequest, pk: int):
 
     return redirect("versus:detail", pk=pk)
 
-
 #  COMMUNITY WEB VIEWS (HTML)
 @login_required(login_url="/authenticate/login/")
 def community_list(request: HttpRequest):
@@ -545,7 +543,6 @@ def leave_community(request: HttpRequest):
         messages.success(request, "Kamu telah keluar dari community.")
 
     return redirect("versus:community_list")
-
 
 #  API CHALLENGE (FLUTTER)
 @require_GET
