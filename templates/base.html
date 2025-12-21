@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
   </head>
   <body>
-    {% block content %} {% endblock content %}
+    {% block content %} {% endblock content %} {% include 'chatbot.html' %}
   
   <!-- Toast -->
   <div id="toast" class="fixed top-5 right-5 hidden z-[9999]">
@@ -47,7 +47,6 @@
     } else {
       showToast(data.message || "Login gagal!", false);
     }
-  });
 </script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+{% include "navbar.html" %}
+
+<div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 mt-24 pb-16">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h1 class="text-xl font-semibold mb-2">Delete Community</h1>
+    <p class="text-gray-600 mb-4">
+      Kamu akan menghapus community berikut:
+    </p>
+
+    <div class="border rounded-xl p-4 mb-6">
+      <p class="font-semibold">{{ community.name }}</p>
+      <p class="text-sm text-gray-500">
+        {{ community.get_primary_sport_display }} • {{ community.total_members }} members
+      </p>
+      <p class="text-xs text-gray-500 mt-1">
+        Owner: {{ community.owner.username }}
+      </p>
+    </div>
+
+    <p class="text-sm text-red-600 mb-4">
+      Tindakan ini tidak bisa dibatalkan. Semua relasi community ini (ke member & match)
+      juga akan ikut terhapus.
+    </p>
+
+    <form method="post" class="flex items-center gap-3">
+      {% csrf_token %}
+      <a href="{% url 'versus:community_detail' community.pk %}"
+         class="px-4 py-2 rounded-lg bg-gray-100 text-sm">
+        Batal
+      </a>
+      <button type="submit"
+              class="px-5 py-2 rounded-full text-white text-sm hover:opacity-90"
+              style="background-color:#D84040"
+              onclick="return confirm('Yakin ingin menghapus community ini secara permanen?');">
+        Ya, hapus
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
