@@ -11,4 +11,8 @@ urlpatterns = [
     path('<str:code>/update/', views.promo_update_view, name='promo_update'),
     path('<str:code>/delete/', views.promo_delete_view, name='promo_delete'),
     path('<str:code>/', views.promo_detail_view, name='promo_detail'),
+    path('api/create/', views.api_create_promo, name='api_create_promo'),
+    path('api/<str:code>/update/', views.api_update_promo, name='api_update_promo'),
+    path('api/<str:code>/delete/', views.api_delete_promo, name='api_delete_promo'),
+    path('api/validate/', views.validate_promo, name='promo_validate'),
 ]

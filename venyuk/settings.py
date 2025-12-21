@@ -35,6 +35,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "muhammad-fattan-venyuk.pbp.cs.ui.ac.
 
 CSRF_TRUSTED_ORIGINS = [
     "https://muhammad-fattan-venyuk.pbp.cs.ui.ac.id"
+    
 ]
 
 # Application definition
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'blog',
     'versus',
     'authenticate',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
