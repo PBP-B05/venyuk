@@ -7,6 +7,8 @@ from django.utils import timezone
 from .models import Promo
 from .forms import PromoForm
 from functools import wraps 
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 
 def admin_required(view_func):
@@ -96,7 +98,7 @@ def promo_detail_view(request, code):
     return render(request, 'promo/promo_detail.html', context)
 
 
-@admin_required
+@csrf_exempt
 def promo_create_view(request):
     """
     Menampilkan dan memproses form untuk membuat promo baru.
@@ -174,3 +176,116 @@ def get_promos_json_view(request):
         promos_list.append(promo_data)
 
     return JsonResponse({'promos': promos_list})
+
+# =====================================
+# FILE: promo/api_views.py (FILE BARU)
+# =====================================
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils.html import strip_tags
+from .models import Promo
+import json
+from datetime import datetime
+
+@csrf_exempt
+def api_create_promo(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        
+        title = strip_tags(data.get('title', ''))
+        description = strip_tags(data.get('description', ''))
+        category = data.get('category', '')
+        amount_discount = int(data.get('amount_discount', 0))
+        max_uses = int(data.get('max_uses', 0))
+        start_date = datetime.strptime(data.get('start_date', ''), '%Y-%m-%d').date()
+        end_date = datetime.strptime(data.get('end_date', ''), '%Y-%m-%d').date()
+        
+        if not title or not description:
+            return JsonResponse({'status': 'error', 'message': 'Title and description required'}, status=400)
+        
+        promo = Promo.objects.create(
+            title=title,
+            description=description,
+            category=category,
+            amount_discount=amount_discount,
+            max_uses=max_uses,
+            start_date=start_date,
+            end_date=end_date,
+            is_active=True,
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Promo created successfully',
+            'promo': {
+                'id': promo.id,
+                'title': promo.title,
+                'description': promo.description,
+                'code': promo.code,
+                'amount_discount': promo.amount_discount,
+                'category': promo.category,
+                'category_display': promo.get_category_display(),
+                'max_uses': promo.max_uses,
+                'start_date': promo.start_date.strftime('%Y-%m-%d'),
+                'end_date': promo.end_date.strftime('%Y-%m-%d'),
+                'is_active': promo.is_active,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def api_update_promo(request, code):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    
+    try:
+        promo = get_object_or_404(Promo, code=code)
+        data = json.loads(request.body)
+        
+        promo.title = strip_tags(data.get('title', promo.title))
+        promo.description = strip_tags(data.get('content', promo.description))
+        promo.category = data.get('category', promo.category)
+        promo.amount_discount = int(data.get('amount_discount', promo.amount_discount))
+        promo.max_uses = int(data.get('max_uses', promo.max_uses))
+        
+        if data.get('start_date'):
+            promo.start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+        if data.get('end_date'):
+            promo.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+        
+        promo.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Promo updated successfully',
+            'promo': {
+                'id': promo.id,
+                'title': promo.title,
+                'code': promo.code,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def api_delete_promo(request, code):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    
+    try:
+        promo = get_object_or_404(Promo, code=code)
+        promo_title = promo.title
+        promo.delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Promo "{promo_title}" deleted successfully'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
