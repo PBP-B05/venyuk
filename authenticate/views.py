@@ -45,7 +45,8 @@ def login_api(request):
         return JsonResponse({
             "status": True,
             "username": user.username,
-            "message": "Login successful!"
+            "message": "Login successful!",
+            "is_superuser": user.is_superuser,
         }, status=200)
 
     return JsonResponse({
