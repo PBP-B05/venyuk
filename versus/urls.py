@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'versus'
+
 urlpatterns = [
     path("", views.list_challenges, name="list"),
     path("create/", views.create_challenge, name="create"),
