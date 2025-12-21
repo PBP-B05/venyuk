@@ -20,7 +20,7 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "muhammad-fattan-venyuk.pbp.cs.ui.ac.id","10.0.2.2"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "muhammad-fattan-venyuk.pbp.cs.ui.ac.id", "10.0.2.2"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://muhammad-fattan-venyuk.pbp.cs.ui.ac.id"
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
 # URUTAN MIDDLEWARE YANG BENAR (JANGAN DIUBAH)
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -129,7 +130,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+
+TIME_ZONE = 'Asia/Jakarta'
+
 USE_I18N = True
 USE_TZ = True
 
