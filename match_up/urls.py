@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import show_matches, create_match, show_match_detail, edit_match, delete_match, join_match, kick_participant
 
+app_name = 'match_up'
+
 urlpatterns = [
     path('', show_matches, name='show_matches'),
     path('create/', create_match, name='create_match'),
