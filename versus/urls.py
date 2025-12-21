@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/challenges/", views.api_challenge_list, name="api_list"),
     path("api/challenges/<int:pk>/", views.api_challenge_detail, name="api_detail"),
     path("api/challenges/<int:pk>/join/", views.api_join_challenge, name="api_join"),
+    path("api/challenges/<int:pk>/leave/", views.api_leave_challenge, name="api_leave"),
     path("api/challenges/create/", views.api_create_challenge, name="api_create"),
     path("api/challenges/<int:pk>/update/", views.api_update_challenge, name="api_update"),
     path("api/challenges/<int:pk>/delete/", views.api_delete_challenge, name="api_delete"),
@@ -37,7 +38,6 @@ urlpatterns = [
     path("api/communities/<int:pk>/join/", views.api_community_join, name="api_community_join"),
     path("api/communities/leave/", views.api_community_leave, name="api_community_leave"),
 ]
-
 
 
 

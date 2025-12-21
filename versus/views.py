@@ -16,11 +16,8 @@ from .forms import ChallengeCreateForm, CommunityForm
 from .models import Challenge, Community, SportChoices
 
 
-# ==========================
 #  HELPERS (COMMUNITY & AUTH)
-# ==========================
-
-def _get_user_community(user) -> Community | None:
+def _get_user_community(user):
     """
     Community yang dimiliki user, atau yang di-join user.
     """
@@ -46,7 +43,7 @@ def _ensure_user_community(request: HttpRequest):
     return community, None
 
 
-def _get_request_data(request: HttpRequest) -> dict:
+def _get_request_data(request: HttpRequest):
     """
     Support Flutter CookieRequest.post (form-data) dan JSON.
     """
@@ -96,7 +93,7 @@ def _json_get_user_or_401(request: HttpRequest):
     if user:
         return user, None
 
-    login_url = reverse("authenticate:login_api")  # sesuai app authenticate kamu
+    login_url = reverse("authenticate:login_api")  
     return None, JsonResponse(
         {
             "ok": False,
@@ -109,7 +106,7 @@ def _json_get_user_or_401(request: HttpRequest):
     )
 
 
-def _can_manage_challenge(user, ch: Challenge) -> bool:
+def _can_manage_challenge(user, ch: Challenge):
     """
     Hanya owner dari community host (yang membuat matchup) atau superuser.
     """
@@ -118,11 +115,8 @@ def _can_manage_challenge(user, ch: Challenge) -> bool:
     return bool(user.is_superuser or (ch.host_id and ch.host.owner_id == user.id))
 
 
-# ==========================
 #  SERIALIZERS
-# ==========================
-
-def _serialize_community(comm: Community, user) -> dict:
+def _serialize_community(comm: Community, user):
     is_owner = bool(user and comm.owner_id == getattr(user, "id", None))
     is_member = bool(
         user and comm.members.filter(pk=getattr(user, "id", None)).exists()
@@ -142,7 +136,8 @@ def _serialize_community(comm: Community, user) -> dict:
     }
 
 
-def _serialize_challenge(ch: Challenge, user=None) -> dict:
+def _serialize_challenge(ch: Challenge, user=None):
+    my_comm = _get_user_community(user) if user else None
     return {
         "id": ch.pk,
         "title": ch.title,
@@ -157,6 +152,7 @@ def _serialize_challenge(ch: Challenge, user=None) -> dict:
         "prize_pool": ch.prize_pool or 0,
         "venue_name": ch.venue_name or "",
         "display_venue_name": ch.display_venue_name,
+        "venue_id": str(ch.venue_id) if getattr(ch, "venue_id", None) else "",
         "players_joined": ch.players_joined or 0,
         "max_players": ch.max_players,
         "detail_url": ch.get_absolute_url(),
@@ -170,9 +166,42 @@ def _serialize_challenge(ch: Challenge, user=None) -> dict:
         # tambahan mobile
         "description": ch.description or "",
         "poster_url": ch.banner_url or "",
-        # ✅ permission flag untuk Flutter
         "can_manage": _can_manage_challenge(user, ch) if user else False,
+        "is_my_host": bool(my_comm and my_comm.pk == ch.host_id),
+        "is_my_opponent": bool(my_comm and my_comm.pk == ch.opponent_id),
     }
+
+
+def _perform_leave_for_community(ch: Challenge, community: Community):
+    """
+    Leave hanya bisa dilakukan oleh community yang tercatat sebagai opponent.
+    (Karena model saat ini hanya menyimpan 1 opponent.)
+    """
+    if ch.status == Challenge.Status.COMPLETED:
+        return False, "Matchup sudah completed dan tidak bisa di-leave."
+
+    if ch.host_id == community.id:
+        return False, "Host tidak bisa leave. Gunakan delete matchup jika ingin membatalkan."
+
+    if ch.opponent_id is None:
+        return False, "Matchup ini belum memiliki opponent."
+
+    if ch.opponent_id != community.id:
+        return False, "Community kamu tidak terdaftar sebagai opponent di matchup ini."
+
+    cap = ch.get_stage_community_size() or 2
+
+    # remove opponent
+    ch.opponent = None
+    ch.players_joined = max(1, (ch.players_joined or 1) - 1)
+
+    # re-open kalau sebelumnya closed tapi slot jadi kosong
+    if ch.status == Challenge.Status.CLOSED and ch.players_joined < cap:
+        ch.status = Challenge.Status.OPEN
+
+    ch.save(update_fields=["opponent", "players_joined", "status"])
+
+    return True, f"Community kamu berhasil leave. Total community: {ch.players_joined}/{cap}."
 
 
 def _perform_join_for_community(ch: Challenge, community: Community):
@@ -200,16 +229,13 @@ def _perform_join_for_community(ch: Challenge, community: Community):
     return True, f"Community kamu berhasil join. Total community: {ch.players_joined}/{cap}."
 
 
-def _ensure_host_owner(request: HttpRequest, ch: Challenge) -> bool:
+def _ensure_host_owner(request: HttpRequest, ch: Challenge):
     u = request.user
     return bool(u.is_authenticated and (u.is_superuser or ch.host.owner_id == u.id))
 
 
-# ==========================
 #  WEB VERSUS PAGES (HTML)
-# ==========================
-
-def list_challenges(request: HttpRequest) -> HttpResponse:
+def list_challenges(request: HttpRequest):
     sport_q = (request.GET.get("sport") or "").strip().lower()
 
     qs = Challenge.objects.all().order_by("start_at")
@@ -227,13 +253,13 @@ def list_challenges(request: HttpRequest) -> HttpResponse:
     )
 
 
-def challenge_detail(request: HttpRequest, pk: int) -> HttpResponse:
+def challenge_detail(request: HttpRequest, pk: int):
     ch = get_object_or_404(Challenge, pk=pk)
     return render(request, "versus/detail.html", {"ch": ch})
 
 
 @login_required(login_url="/authenticate/login/")
-def create_challenge(request: HttpRequest) -> HttpResponse:
+def create_challenge(request: HttpRequest):
     community, redirect_resp = _ensure_user_community(request)
     if redirect_resp:
         return redirect_resp
@@ -259,7 +285,7 @@ def create_challenge(request: HttpRequest) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def update_challenge(request: HttpRequest, pk: int) -> HttpResponse:
+def update_challenge(request: HttpRequest, pk: int):
     ch = get_object_or_404(Challenge, pk=pk)
 
     if not _ensure_host_owner(request, ch):
@@ -300,7 +326,7 @@ def update_challenge(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def delete_challenge(request: HttpRequest, pk: int) -> HttpResponse:
+def delete_challenge(request: HttpRequest, pk: int):
     ch = get_object_or_404(Challenge, pk=pk)
 
     if not _ensure_host_owner(request, ch):
@@ -317,7 +343,7 @@ def delete_challenge(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required(login_url="/authenticate/login/")
 @require_POST
-def join_challenge(request: HttpRequest, pk: int) -> HttpResponse:
+def join_challenge(request: HttpRequest, pk: int):
     community, redirect_resp = _ensure_user_community(request)
     if redirect_resp:
         return redirect_resp
@@ -333,12 +359,9 @@ def join_challenge(request: HttpRequest, pk: int) -> HttpResponse:
     return redirect("versus:detail", pk=pk)
 
 
-# ==========================
 #  COMMUNITY WEB VIEWS (HTML)
-# ==========================
-
 @login_required(login_url="/authenticate/login/")
-def community_list(request: HttpRequest) -> HttpResponse:
+def community_list(request: HttpRequest):
     my_owned = Community.objects.filter(owner=request.user).first()
     my_joined = Community.objects.filter(members=request.user).first()
     my_current = my_owned or my_joined
@@ -358,7 +381,7 @@ def community_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def community_detail(request: HttpRequest, pk: int) -> HttpResponse:
+def community_detail(request: HttpRequest, pk: int):
     community = get_object_or_404(Community, pk=pk)
 
     challenges_hosted = community.hosted_challenges.all().order_by("start_at")
@@ -383,7 +406,7 @@ def community_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def create_community(request: HttpRequest) -> HttpResponse:
+def create_community(request: HttpRequest):
     has_any = (
         not request.user.is_superuser
         and (
@@ -419,7 +442,7 @@ def create_community(request: HttpRequest) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def update_community(request: HttpRequest, pk: int) -> HttpResponse:
+def update_community(request: HttpRequest, pk: int):
     community = get_object_or_404(Community, pk=pk)
 
     if not (request.user.is_superuser or community.owner_id == request.user.id):
@@ -443,7 +466,7 @@ def update_community(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required(login_url="/authenticate/login/")
-def delete_community(request: HttpRequest, pk: int) -> HttpResponse:
+def delete_community(request: HttpRequest, pk: int):
     community = get_object_or_404(Community, pk=pk)
 
     if not (request.user.is_superuser or community.owner_id == request.user.id):
@@ -465,7 +488,7 @@ def delete_community(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required(login_url="/authenticate/login/")
 @require_POST
-def join_community(request: HttpRequest, pk: int) -> HttpResponse:
+def join_community(request: HttpRequest, pk: int):
     has_any = (
         not request.user.is_superuser
         and (
@@ -489,7 +512,7 @@ def join_community(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required(login_url="/authenticate/login/")
 @require_POST
-def leave_community(request: HttpRequest) -> HttpResponse:
+def leave_community(request: HttpRequest):
     my_owned = Community.objects.filter(owner=request.user).first()
     my_joined = Community.objects.filter(members=request.user).first()
     current = my_owned or my_joined
@@ -524,12 +547,9 @@ def leave_community(request: HttpRequest) -> HttpResponse:
     return redirect("versus:community_list")
 
 
-# ==========================
 #  API CHALLENGE (FLUTTER)
-# ==========================
-
 @require_GET
-def api_challenge_list(request: HttpRequest) -> JsonResponse:
+def api_challenge_list(request: HttpRequest):
     sport_q = (request.GET.get("sport") or "").strip().lower()
 
     qs = Challenge.objects.all().order_by("start_at")
@@ -542,7 +562,7 @@ def api_challenge_list(request: HttpRequest) -> JsonResponse:
 
 
 @require_GET
-def api_challenge_detail(request: HttpRequest, pk: int) -> JsonResponse:
+def api_challenge_detail(request: HttpRequest, pk: int):
     ch = get_object_or_404(Challenge, pk=pk)
     user = _resolve_user_from_request(request)  # bisa None/anon
     return JsonResponse(_serialize_challenge(ch, user=user))
@@ -550,7 +570,7 @@ def api_challenge_detail(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_create_challenge(request: HttpRequest) -> JsonResponse:
+def api_create_challenge(request: HttpRequest):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -578,9 +598,9 @@ def api_create_challenge(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_update_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+def api_update_challenge(request: HttpRequest, pk: int):
     """
-    ✅ UPDATE matchup (HANYA owner dari host community / superuser).
+    UPDATE matchup (HANYA owner dari host community / superuser).
     """
     user, err = _json_get_user_or_401(request)
     if err:
@@ -610,9 +630,9 @@ def api_update_challenge(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_delete_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+def api_delete_challenge(request: HttpRequest, pk: int):
     """
-    ✅ DELETE matchup (HANYA owner dari host community / superuser).
+    DELETE matchup (HANYA owner dari host community / superuser).
     """
     user, err = _json_get_user_or_401(request)
     if err:
@@ -636,7 +656,7 @@ def api_delete_challenge(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_join_challenge(request: HttpRequest, pk: int) -> JsonResponse:
+def api_join_challenge(request: HttpRequest, pk: int):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -660,12 +680,39 @@ def api_join_challenge(request: HttpRequest, pk: int) -> JsonResponse:
     )
 
 
-# ==========================
-#  API COMMUNITY (FLUTTER)
-# ==========================
+@csrf_exempt
+@require_POST
+def api_leave_challenge(request: HttpRequest, pk: int):
+    """
+    LEAVE matchup (untuk WEB): hanya community yang tercatat sebagai opponent.
+    (Model saat ini hanya menyimpan 1 opponent.)
+    """
+    user, err = _json_get_user_or_401(request)
+    if err:
+        return err
 
+    community = _get_user_community(user)
+    if not community:
+        return JsonResponse(
+            {"ok": False, "status": "error", "message": "Kamu perlu membuat/join community terlebih dahulu."},
+            status=400,
+        )
+
+    ch = get_object_or_404(Challenge, pk=pk)
+
+    ok, msg = _perform_leave_for_community(ch, community)
+    if not ok:
+        return JsonResponse({"ok": False, "status": "error", "message": msg}, status=400)
+
+    return JsonResponse(
+        {"ok": True, "status": "success", "message": msg, "challenge": _serialize_challenge(ch, user=user)},
+        status=200,
+    )
+
+
+#  API COMMUNITY (FLUTTER)
 @require_GET
-def api_community_list(request: HttpRequest) -> JsonResponse:
+def api_community_list(request: HttpRequest):
     """
     List semua community + info community yang sedang user ikuti.
     Bisa diakses guest (user anonim).
@@ -697,7 +744,7 @@ def api_community_list(request: HttpRequest) -> JsonResponse:
 
 
 @require_GET
-def api_community_detail(request: HttpRequest, pk: int) -> JsonResponse:
+def api_community_detail(request: HttpRequest, pk: int):
     """
     Detail community + daftar hosted/joined challenges.
     Bisa diakses guest.
@@ -721,7 +768,7 @@ def api_community_detail(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_community_create(request: HttpRequest) -> JsonResponse:
+def api_community_create(request: HttpRequest):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -759,7 +806,7 @@ def api_community_create(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_community_update(request: HttpRequest, pk: int) -> JsonResponse:
+def api_community_update(request: HttpRequest, pk: int):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -784,7 +831,7 @@ def api_community_update(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_community_delete(request: HttpRequest, pk: int) -> JsonResponse:
+def api_community_delete(request: HttpRequest, pk: int):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -800,7 +847,7 @@ def api_community_delete(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_community_join(request: HttpRequest, pk: int) -> JsonResponse:
+def api_community_join(request: HttpRequest, pk: int):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
@@ -828,7 +875,7 @@ def api_community_join(request: HttpRequest, pk: int) -> JsonResponse:
 
 @csrf_exempt
 @require_POST
-def api_community_leave(request: HttpRequest) -> JsonResponse:
+def api_community_leave(request: HttpRequest):
     user, err = _json_get_user_or_401(request)
     if err:
         return err
