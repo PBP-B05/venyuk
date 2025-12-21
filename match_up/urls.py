@@ -4,6 +4,8 @@ from .views import edit_match_flutter, kick_participant_flutter, delete_match_fl
 
 app_name = 'match_up'
 
+app_name = 'match_up'
+
 urlpatterns = [
     path('', show_matches, name='show_matches'),
     path('create/', create_match, name='create_match'),
