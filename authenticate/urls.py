@@ -10,4 +10,7 @@ urlpatterns = [
     path('user-data/', views.get_user_data, name='get_user_data'),
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
+    # ===== API (FLUTTER) =====
+    path('login_api/', views.login_api, name='login_api'),
+    path('register_api/', views.register_api, name='register_api'),
 ]
