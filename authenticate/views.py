@@ -47,8 +47,6 @@ def login_api(request):
             "message": "Login successful!"
         }, status=200)
 
-    print(request.POST)
-
     return JsonResponse({
         "status": False,
         "message": "Invalid username or password."
