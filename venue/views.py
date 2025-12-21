@@ -12,6 +12,33 @@ from promo.models import Promo
 from django.utils import timezone
 from datetime import datetime, date
 from django.db import IntegrityError, transaction
+# Di file venue/views.py
+from django.http import JsonResponse
+from .models import Venue
+
+from django.http import JsonResponse
+from .models import Venue
+
+def venue_list_json(request):
+    venues = Venue.objects.all()
+    data = []
+    for v in venues:
+        # Kita ambil kategori pertama jika ada koma, atau kosong
+        cat_list = v.get_categories_list()
+        primary_cat = cat_list[0] if cat_list else "Umum"
+
+        data.append({
+            'pk': v.pk,  # ID Venue (UUID)
+            'fields': {
+                'name': v.name,
+                'address': v.address,
+                'category': primary_cat, # Kirim kategori untuk ditampilkan di UI
+                'price': v.price,
+                'rating': v.rating,
+                'image_url': v.get_image_url(), # <--- PENTING: Pakai method get_image_url()
+            }
+        })
+    return JsonResponse(data, safe=False)
 
 # ==============================================================
 # AVAILABILITY CHECK API
