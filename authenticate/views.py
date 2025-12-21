@@ -10,10 +10,96 @@ import datetime
 from django.views.decorators.csrf import csrf_exempt
 from .forms import UserEditForm, UserProfileEditForm
 from django.contrib import messages
-import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth.models import User
+import json
+
+
+# ==================================================
+# LOGIN API (FLUTTER)
+# ==================================================
+@csrf_exempt
+def login_api(request):
+    if request.method != "POST":
+        return JsonResponse({
+            "status": False,
+            "message": "Invalid request method."
+        }, status=405)
+
+    username = request.POST.get("username")
+    password = request.POST.get("password")
+
+    if not username or not password:
+        return JsonResponse({
+            "status": False,
+            "message": "Username and password are required."
+        }, status=400)
+
+    user = authenticate(username=username, password=password)
+
+    if user is not None and user.is_active:
+        auth_login(request, user)
+        return JsonResponse({
+            "status": True,
+            "username": user.username,
+            "message": "Login successful!"
+        }, status=200)
+
+    print(request.POST)
+
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid username or password."
+    }, status=401)
+
+
+# ==================================================
+# REGISTER API (FLUTTER)
+# ==================================================
+@csrf_exempt
+def register_api(request):
+    if request.method != "POST":
+        return JsonResponse({
+            "status": False,
+            "message": "Invalid request method."
+        }, status=405)
+
+    data = json.loads(request.body)
+    username = data.get("username")
+    password1 = data.get("password1")
+    password2 = data.get("password2")
+
+    if not username or not password1 or not password2:
+        return JsonResponse({
+            "status": False,
+            "message": "All fields are required."
+        }, status=400)
+
+    if password1 != password2:
+        return JsonResponse({
+            "status": False,
+            "message": "Passwords do not match."
+        }, status=400)
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({
+            "status": False,
+            "message": "Username already exists."
+        }, status=400)
+
+    user = User.objects.create_user(
+        username=username,
+        password=password1
+    )
+    user.save()
+
+    return JsonResponse({
+        "status": True,
+        "username": user.username,
+        "message": "User created successfully!"
+    }, status=201)
 
 
 # ==============================================================
@@ -47,7 +133,6 @@ def register(request):
                     })
                 return redirect('authenticate:login')
         else:
-            # ADD THIS PART 👇
             errors = form.errors.as_json()
             print("Registration errors:", errors)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -175,4 +260,3 @@ def profile_edit(request):
     }
 
     return render(request, 'authenticate/profile_edit.html', context)
-
