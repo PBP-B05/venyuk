@@ -287,53 +287,7 @@ def login_api(request):
 # ==================================================
 # REGISTER API (FLUTTER)
 # ==================================================
-@csrf_exempt
-def register_api(request):
-    if request.method != "POST":
-        return JsonResponse({
-            "status": False,
-            "message": "Invalid request method."
-        }, status=405)
 
-    data = json.loads(request.body)
-    username = data.get("username")
-    password1 = data.get("password1")
-    password2 = data.get("password2")
-
-    if not username or not password1 or not password2:
-        return JsonResponse({
-            "status": False,
-            "message": "All fields are required."
-        }, status=400)
-
-    if password1 != password2:
-        return JsonResponse({
-            "status": False,
-            "message": "Passwords do not match."
-        }, status=400)
-
-    if User.objects.filter(username=username).exists():
-        return JsonResponse({
-            "status": False,
-            "message": "Username already exists."
-        }, status=400)
-
-    user = User.objects.create_user(
-        username=username,
-        password=password1
-    )
-    user.save()
-
-    return JsonResponse({
-        "status": True,
-        "username": user.username,
-        "message": "User created successfully!"
-    }, status=201)
-
-
-# ==================================================
-#  2. REGISTER API (KHUSUS FLUTTER)
-# ==================================================
 @csrf_exempt
 def register_api(request):
     if request.method == 'POST':
