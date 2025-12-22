@@ -328,10 +328,12 @@ def register_api(request):
 # ==================================================
 @csrf_exempt
 def logout_user_api(request):
+    username = request.user.username if request.user.is_authenticated else "Pengguna"
     logout(request)
     
     # 2. Selalu kembalikan JSON (karena ini endpoint API)
     return JsonResponse({
+        "username": username,
         "status": True,
         "message": "Logout berhasil!",
     }, status=200)
