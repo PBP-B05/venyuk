@@ -327,7 +327,7 @@ def register_api(request):
 #  3. LOGOUT API (FLUTTER & WEB)
 # ==================================================
 @csrf_exempt
-def logout_user(request):
+def logout_user_api(request):
     logout(request)
     
     # Respons untuk Flutter

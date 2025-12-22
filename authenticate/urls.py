@@ -15,4 +15,5 @@ urlpatterns = [
     # ===== API (FLUTTER) =====
     path('login_api/', views.login_api, name='login_api'),
     path('register_api/', views.register_api, name='register_api'),
+    path('logout_api/', views.logout_user_api, name='logout_api'),
 ]
