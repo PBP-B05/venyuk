@@ -330,17 +330,11 @@ def register_api(request):
 def logout_user_api(request):
     logout(request)
     
-    # Respons untuk Flutter
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
-         return JsonResponse({
-            "status": True,
-            "message": "Berhasil logout!"
-        })
-    
-    # Respons untuk Web
-    response = HttpResponseRedirect(reverse('venue:landing_page'))
-    response.delete_cookie('last_login')
-    return response
+    # 2. Selalu kembalikan JSON (karena ini endpoint API)
+    return JsonResponse({
+        "status": True,
+        "message": "Logout berhasil!",
+    }, status=200)
 
 
 # ==================================================
