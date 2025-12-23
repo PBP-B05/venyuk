@@ -438,3 +438,67 @@ def delete_product_flutter(request, id):
         product.delete()
         return JsonResponse({"status": "success"}, status=200)
     return JsonResponse({"status": "error"}, status=401)
+
+@csrf_exempt
+def check_promo_price(request, product_id):
+    if request.method == 'POST':
+        try:
+            # 1. Parsing Data
+            data = {}
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                data = request.POST
+
+            promo_code = data.get('promo_code', '').strip()
+            category_context = data.get('category_context', 'shop').lower()
+
+            # 2. Ambil Product
+            product = get_object_or_404(Product, pk=product_id)
+            original_price = product.price
+            
+            # Jika tidak ada kode promo dikirim
+            if not promo_code:
+                return JsonResponse({
+                    "status": "neutral",
+                    "message": "Kode promo kosong",
+                    "final_price": original_price,
+                    "discount_amount": 0
+                }, status=200)
+
+            # 3. Validasi Promo (Strict Mode - Sama seperti Checkout)
+            try:
+                promo_obj = Promo.objects.get(code__iexact=promo_code)
+                now = timezone.now().date()
+
+                if not promo_obj.is_active:
+                     return JsonResponse({"status": "error", "message": "Kode tidak aktif."}, status=400)
+                
+                if promo_obj.max_uses <= 0:
+                     return JsonResponse({"status": "error", "message": "Kuota promo habis."}, status=400)
+
+                if not (promo_obj.start_date <= now <= promo_obj.end_date):
+                     return JsonResponse({"status": "error", "message": "Kode kadaluarsa."}, status=400)
+
+                if promo_obj.category.lower() != category_context:
+                     return JsonResponse({"status": "error", "message": f"Kode ini khusus {promo_obj.category}."}, status=400)
+
+                # 4. Hitung Diskon
+                discount_amount = (original_price * promo_obj.amount_discount) / 100
+                final_price = int(original_price - discount_amount)
+
+                return JsonResponse({
+                    "status": "success",
+                    "message": f"Promo Valid! Diskon {promo_obj.amount_discount}%",
+                    "final_price": final_price,
+                    "discount_amount": int(discount_amount),
+                    "original_price": original_price
+                }, status=200)
+
+            except Promo.DoesNotExist:
+                return JsonResponse({"status": "error", "message": "Kode promo tidak ditemukan."}, status=404)
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
