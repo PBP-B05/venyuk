@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.core import serializers
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +14,7 @@ import uuid
 import json
 from django.contrib.auth.models import User
 from promo.models import Promo
-from django.utils import timezone
+
 
 
 # Create your views here.
@@ -249,24 +250,27 @@ def show_history_json(request):
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
-def checkout_flutter(request, product_id):
+def checkout_flutter(request, id): 
     if request.method == 'POST':
         try:
-            # Cek login sederhana
             if not request.user.is_authenticated:
                 return JsonResponse({"status": "error", "message": "Harus login."}, status=401)
 
             data = json.loads(request.body)
             user = request.user
-            product = get_object_or_404(Product, pk=product_id)
+            
+            # Gunakan 'id' di sini juga (bukan product_id)
+            product = get_object_or_404(Product, pk=id) 
 
+            # 1. Cek Stok
             if product.stock <= 0:
                  return JsonResponse({"status": "error", "message": "Stok produk habis."}, status=400)
             
+            # Ambil data input
             promo_code = data.get('promo_code', '').strip()
             category_context = data.get('category_context', 'shop').lower() 
 
-            # Setup variabel harga
+            # Setup variabel
             final_price = product.price
             discount_applied = False
             promo_msg = ""
@@ -278,7 +282,6 @@ def checkout_flutter(request, product_id):
                     promo_obj = Promo.objects.get(code__iexact=promo_code)
                     now = timezone.now().date()
                     
-                    # Validasi manual
                     if (promo_obj.is_active and 
                         promo_obj.max_uses > 0 and 
                         promo_obj.start_date <= now <= promo_obj.end_date and 
@@ -290,27 +293,23 @@ def checkout_flutter(request, product_id):
                         promo_msg = "Diskon berhasil digunakan!"
                     else:
                         promo_msg = "Kode promo tidak valid atau habis."
-                        promo_obj = None # Reset jika tidak valid
+                        promo_obj = None 
 
                 except Promo.DoesNotExist:
                     promo_msg = "Kode promo tidak ditemukan."
 
-            # 3. Eksekusi Perubahan Data (Tanpa Transaction)
-            
-            # A. Kurangi stok produk
+            # 3. Simpan Data
             product.stock -= 1
             product.save()
 
-            # B. Kurangi kuota promo (jika dipakai)
             if discount_applied and promo_obj:
                 promo_obj.max_uses -= 1
                 promo_obj.save()
 
-            # C. SIMPAN KE HISTORY (Dengan harga final/diskon)
             Purchased_Product.objects.create(
                 user=user,
                 product=product,
-                price=int(final_price) # <-- Harga diskon disimpan di sini
+                price=int(final_price) 
             )
 
             return JsonResponse({
