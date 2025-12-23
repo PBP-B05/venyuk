@@ -13,6 +13,7 @@ import uuid
 import json
 from django.contrib.auth.models import User
 from promo.models import Promo
+from django.utils import timezone
 
 
 # Create your views here.
@@ -259,11 +260,9 @@ def checkout_flutter(request, product_id):
             user = request.user
             product = get_object_or_404(Product, pk=product_id)
 
-            # 1. Cek Stok Produk
             if product.stock <= 0:
                  return JsonResponse({"status": "error", "message": "Stok produk habis."}, status=400)
             
-            # Ambil data input
             promo_code = data.get('promo_code', '').strip()
             category_context = data.get('category_context', 'shop').lower() 
 
@@ -285,7 +284,6 @@ def checkout_flutter(request, product_id):
                         promo_obj.start_date <= now <= promo_obj.end_date and 
                         promo_obj.category.lower() == category_context):
                         
-                        # Hitung Diskon
                         discount_amount = (final_price * promo_obj.amount_discount) / 100
                         final_price -= int(discount_amount)
                         discount_applied = True
