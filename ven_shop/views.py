@@ -12,6 +12,7 @@ import requests
 import uuid
 import json
 from django.contrib.auth.models import User
+from promo.models import Promo
 
 
 # Create your views here.
@@ -228,17 +229,18 @@ def purchase_history(request):
 @csrf_exempt
 def show_history_json(request):
     user = request.user
-    if not user.is_authenticated:
-        user = User.objects.first() 
+    if not request.user.is_authenticated:
+         return JsonResponse([], safe=False)
     
     purchases = Purchased_Product.objects.filter(user=user).select_related('product').order_by('-purchase_date')
 
     data = []
     for item in purchases:
+        real_price_paid = item.price if item.price > 0 else item.product.price
         data.append({
             'id': str(item.id),
             'product_title': item.product.title,
-            'product_price': item.product.price,
+            'product_price': real_price_paid,
             'product_image': item.product.thumbnail,
             'purchase_date': item.purchase_date.strftime("%Y-%m-%d %H:%M"), 
         })
@@ -246,47 +248,80 @@ def show_history_json(request):
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
-def checkout_flutter(request, id):
+def checkout_flutter(request, product_id):
     if request.method == 'POST':
         try:
+            # Cek login sederhana
             if not request.user.is_authenticated:
-                return JsonResponse({
-                    "status": "error", 
-                    "message": "Anda harus login untuk melakukan pembelian."
-                }, status=401)
+                return JsonResponse({"status": "error", "message": "Harus login."}, status=401)
 
-            user_buyer = request.user
+            data = json.loads(request.body)
+            user = request.user
+            product = get_object_or_404(Product, pk=product_id)
 
-            product = Product.objects.filter(pk=id).first()
-            if not product:
-                return JsonResponse({"status": "error", "message": "Produk tidak ditemukan"}, status=404)
-
+            # 1. Cek Stok Produk
             if product.stock <= 0:
-                return JsonResponse({"status": "error", "message": "Stok habis."}, status=400)
-
-            try:
-                data = json.loads(request.body)
-            except json.JSONDecodeError:
-                data = request.POST
+                 return JsonResponse({"status": "error", "message": "Stok produk habis."}, status=400)
             
-            product.stock = F('stock') - 1
-            product.save()
-            product.refresh_from_db() 
+            # Ambil data input
+            promo_code = data.get('promo_code', '').strip()
+            category_context = data.get('category_context', 'shop').lower() 
 
+            # Setup variabel harga
+            final_price = product.price
+            discount_applied = False
+            promo_msg = ""
+            promo_obj = None
+
+            # 2. Logika Promo
+            if promo_code:
+                try:
+                    promo_obj = Promo.objects.get(code__iexact=promo_code)
+                    now = timezone.now().date()
+                    
+                    # Validasi manual
+                    if (promo_obj.is_active and 
+                        promo_obj.max_uses > 0 and 
+                        promo_obj.start_date <= now <= promo_obj.end_date and 
+                        promo_obj.category.lower() == category_context):
+                        
+                        # Hitung Diskon
+                        discount_amount = (final_price * promo_obj.amount_discount) / 100
+                        final_price -= int(discount_amount)
+                        discount_applied = True
+                        promo_msg = "Diskon berhasil digunakan!"
+                    else:
+                        promo_msg = "Kode promo tidak valid atau habis."
+                        promo_obj = None # Reset jika tidak valid
+
+                except Promo.DoesNotExist:
+                    promo_msg = "Kode promo tidak ditemukan."
+
+            # 3. Eksekusi Perubahan Data (Tanpa Transaction)
+            
+            # A. Kurangi stok produk
+            product.stock -= 1
+            product.save()
+
+            # B. Kurangi kuota promo (jika dipakai)
+            if discount_applied and promo_obj:
+                promo_obj.max_uses -= 1
+                promo_obj.save()
+
+            # C. SIMPAN KE HISTORY (Dengan harga final/diskon)
             Purchased_Product.objects.create(
-                user=user_buyer,
-                product=product
+                user=user,
+                product=product,
+                price=int(final_price) # <-- Harga diskon disimpan di sini
             )
 
             return JsonResponse({
-                "status": "success", 
-                "message": "Pembelian berhasil!",
-                "new_stock": product.stock,
-                "product_name": product.title 
+                "status": "success",
+                "message": "Pembelian berhasil! " + promo_msg,
+                "final_price": final_price
             }, status=200)
 
         except Exception as e:
-            print(f"ERROR: {e}") 
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)

@@ -68,10 +68,6 @@ def validate_promo(request):
 
 
 def promo_list_view(request):
-    """
-    Menampilkan halaman daftar promo.
-    Data akan dimuat oleh AJAX.
-    """
     category_filter = request.GET.get('category')
     
     context = {
@@ -158,7 +154,8 @@ def get_promos_json_view(request):
     promo_query = Promo.objects.filter(
         is_active=True,
         start_date__lte=today,
-        end_date__gte=today
+        end_date__gte=today,
+        max_uses__gt=0  
     ).order_by('-created_at')
 
     if category_filter in ['SHOP', 'VENUE']:
@@ -289,3 +286,69 @@ def api_delete_promo(request, code):
         })
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def checkout_flutter(request, product_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product = get_object_or_404(Product, id=product_id)
+            
+            email = data.get('email')
+            address = data.get('address')
+            promo_code = data.get('promo_code', '').strip() 
+            
+            # Harga default
+            final_price = product.price
+            discount_applied = False
+            promo_obj = None
+
+            if promo_code:
+                try:
+                    promo_obj = Promo.objects.get(code__iexact=promo_code)
+                    now = timezone.now().date()
+                    if (promo_obj.is_active and 
+                        promo_obj.max_uses > 0 and 
+                        promo_obj.start_date <= now <= promo_obj.end_date):
+                        
+                        # Validasi Kategori (Opsional: misal Shop hanya bisa pakai promo SHOP)
+                        # if promo_obj.category == 'shop': ...
+                        
+                        # Hitung Diskon
+                        discount_amount = (final_price * promo_obj.amount_discount) / 100
+                        final_price -= discount_amount
+                        discount_applied = True
+                    else:
+                        promo_obj = None 
+
+                except Promo.DoesNotExist:
+                    pass
+
+            # --- SIMPAN ORDER ---
+            # Pastikan Anda memiliki model Order/Transaction
+            # order = Order.objects.create(
+            #     user=request.user, # Jika perlu login
+            #     product=product,
+            #     price=int(final_price), # Simpan harga SETELAH diskon
+            #     email=email,
+            #     address=address,
+            #     ...
+            # )
+
+            # --- KURANGI KUOTA PROMO ---
+            if discount_applied and promo_obj:
+                promo_obj.max_uses -= 1
+                promo_obj.save()
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Berhasil melakukan checkout!",
+                "discount_applied": discount_applied,
+                "original_price": product.price,
+                "final_price": final_price,
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
