@@ -253,84 +253,113 @@ def show_history_json(request):
 def checkout_flutter(request, id):
     if request.method == 'POST':
         try:
-            # 1. Cek Login
+            # 1. CEK LOGIN
             if not request.user.is_authenticated:
                 return JsonResponse({"status": "error", "message": "Harus login."}, status=401)
-
+            
             user = request.user
             
-            # --- BAGIAN PERBAIKAN UTAMA ---
-            # Kita coba baca sebagai JSON. Jika gagal (error char 0), 
-            # kita ambil dari request.POST (Form Data)
+            # 2. AMBIL DATA (Support JSON & Form Data)
+            # Kita cari 'promo_code' di JSON body ATAU di POST data
+            data = {}
             try:
                 data = json.loads(request.body)
             except json.JSONDecodeError:
+                # Jika error json, berarti dikirim sebagai Form Data
                 data = request.POST
-            # -----------------------------
 
-            # 2. Ambil Product
-            product = get_object_or_404(Product, pk=id) 
+            # Ambil nilai promo & kategori
+            # Default kategori kita set ke 'shop' jika tidak dikirim flutter
+            promo_code = data.get('promo_code', request.POST.get('promo_code', '')).strip()
+            category_context = data.get('category_context', request.POST.get('category_context', 'shop')).lower()
 
-            # 3. Cek Stok Produk
+            # DEBUGGING: Print ke terminal Django
+            print(f"--- DEBUG CHECKOUT ---")
+            print(f"User: {user.username}")
+            print(f"Promo Code diterima: '{promo_code}'")
+            print(f"Kategori konteks: '{category_context}'")
+
+            # 3. AMBIL PRODUK
+            product = get_object_or_404(Product, pk=id)
+            
             if product.stock <= 0:
                  return JsonResponse({"status": "error", "message": "Stok produk habis."}, status=400)
-            
-            # 4. Ambil Data (Aman untuk JSON maupun Form Data)
-            promo_code = data.get('promo_code', '').strip()
-            category_context = data.get('category_context', 'shop').lower() 
-            
-            # Setup Variabel
-            final_price = product.price
-            discount_applied = False
-            promo_msg = ""
-            promo_obj = None
 
-            # 5. Logika Promo
+            # Setup Variabel Awal
+            final_price = product.price
+            original_price = product.price
+            promo_obj = None
+            message_suffix = ""
+            discount_applied = False
+
+            # 4. LOGIKA PROMO
             if promo_code:
                 try:
+                    # Cari promo (case insensitive)
                     promo_obj = Promo.objects.get(code__iexact=promo_code)
                     now = timezone.now().date()
                     
-                    if (promo_obj.is_active and 
-                        promo_obj.max_uses > 0 and 
-                        promo_obj.start_date <= now <= promo_obj.end_date and 
-                        promo_obj.category.lower() == category_context):
-                        
-                        discount_amount = (final_price * promo_obj.amount_discount) / 100
-                        final_price -= int(discount_amount)
-                        discount_applied = True
-                        promo_msg = "Diskon berhasil digunakan!"
+                    print(f"Promo ditemukan: {promo_obj.code} (Kategori: {promo_obj.category})")
+                    print(f"Sisa kuota: {promo_obj.max_uses}")
+
+                    # --- VALIDASI KETAT ---
+                    if not promo_obj.is_active:
+                         message_suffix = " (Gagal: Promo tidak aktif)"
+                         print("Gagal: is_active False")
+                    elif promo_obj.max_uses <= 0:
+                         message_suffix = " (Gagal: Kuota habis)"
+                         print("Gagal: max_uses 0")
+                    elif not (promo_obj.start_date <= now <= promo_obj.end_date):
+                         message_suffix = " (Gagal: Tanggal tidak berlaku)"
+                         print(f"Gagal: Date mismatch ({now})")
+                    elif promo_obj.category.lower() != category_context:
+                         # INI PENYEBAB PALING UMUM (Shop vs Venue)
+                         message_suffix = f" (Gagal: Promo ini khusus {promo_obj.category})"
+                         print(f"Gagal: Kategori beda. Promo: {promo_obj.category}, Request: {category_context}")
                     else:
-                        promo_msg = "Kode promo tidak valid/habis."
-                        promo_obj = None 
+                        # --- SUKSES VALIDASI ---
+                        discount_amount = (original_price * promo_obj.amount_discount) / 100
+                        final_price = int(original_price - discount_amount)
+                        discount_applied = True
+                        message_suffix = f" (Hemat Rp{int(discount_amount)}!)"
+                        print(f"Sukses! Harga potong jadi: {final_price}")
 
                 except Promo.DoesNotExist:
-                    promo_msg = "Kode promo tidak ditemukan."
+                    message_suffix = " (Kode promo tidak ditemukan)"
+                    print("Gagal: Kode tidak ada di DB")
 
-            # 6. Simpan Data
+            # 5. EKSEKUSI DATABASE
+            
+            # A. Kurangi Stok Produk
             product.stock -= 1
             product.save()
 
+            # B. Kurangi Kuota Promo (HANYA JIKA DISKON BERHASIL)
             if discount_applied and promo_obj:
                 promo_obj.max_uses -= 1
-                promo_obj.save()
+                promo_obj.save()  # <--- INI WAJIB AGAR KUOTA BERKURANG
+                print("Kuota promo berhasil dikurangi -1")
 
+            # C. Simpan ke History (Purchased_Product)
             Purchased_Product.objects.create(
                 user=user,
                 product=product,
-                price=int(final_price) 
+                price=final_price  # Harga final (diskon atau normal) tersimpan
             )
+            
+            print("Transaksi tersimpan di History.")
+            print("------------------------")
 
             return JsonResponse({
                 "status": "success",
-                "message": "Pembelian berhasil! " + promo_msg,
-                "final_price": final_price
+                "message": "Pembelian berhasil!" + message_suffix,
+                "final_price": final_price,
+                "original_price": original_price
             }, status=200)
 
         except Exception as e:
-            # Print error ke terminal untuk debugging
-            print(f"Checkout Error: {str(e)}")
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            print(f"CRITICAL ERROR: {e}")
+            return JsonResponse({"status": "error", "message": f"Server Error: {str(e)}"}, status=500)
 
     return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
 
