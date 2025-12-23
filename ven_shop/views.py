@@ -250,33 +250,42 @@ def show_history_json(request):
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
-def checkout_flutter(request, id): 
+def checkout_flutter(request, id):
     if request.method == 'POST':
         try:
+            # 1. Cek Login
             if not request.user.is_authenticated:
                 return JsonResponse({"status": "error", "message": "Harus login."}, status=401)
 
-            data = json.loads(request.body)
             user = request.user
             
-            # Gunakan 'id' di sini juga (bukan product_id)
+            # --- BAGIAN PERBAIKAN UTAMA ---
+            # Kita coba baca sebagai JSON. Jika gagal (error char 0), 
+            # kita ambil dari request.POST (Form Data)
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                data = request.POST
+            # -----------------------------
+
+            # 2. Ambil Product
             product = get_object_or_404(Product, pk=id) 
 
-            # 1. Cek Stok
+            # 3. Cek Stok Produk
             if product.stock <= 0:
                  return JsonResponse({"status": "error", "message": "Stok produk habis."}, status=400)
             
-            # Ambil data input
+            # 4. Ambil Data (Aman untuk JSON maupun Form Data)
             promo_code = data.get('promo_code', '').strip()
             category_context = data.get('category_context', 'shop').lower() 
-
-            # Setup variabel
+            
+            # Setup Variabel
             final_price = product.price
             discount_applied = False
             promo_msg = ""
             promo_obj = None
 
-            # 2. Logika Promo
+            # 5. Logika Promo
             if promo_code:
                 try:
                     promo_obj = Promo.objects.get(code__iexact=promo_code)
@@ -292,13 +301,13 @@ def checkout_flutter(request, id):
                         discount_applied = True
                         promo_msg = "Diskon berhasil digunakan!"
                     else:
-                        promo_msg = "Kode promo tidak valid atau habis."
+                        promo_msg = "Kode promo tidak valid/habis."
                         promo_obj = None 
 
                 except Promo.DoesNotExist:
                     promo_msg = "Kode promo tidak ditemukan."
 
-            # 3. Simpan Data
+            # 6. Simpan Data
             product.stock -= 1
             product.save()
 
@@ -319,6 +328,8 @@ def checkout_flutter(request, id):
             }, status=200)
 
         except Exception as e:
+            # Print error ke terminal untuk debugging
+            print(f"Checkout Error: {str(e)}")
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
