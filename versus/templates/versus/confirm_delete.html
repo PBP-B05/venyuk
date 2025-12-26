@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 mt-24">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h1 class="text-xl font-semibold mb-2">Hapus Matchup</h1>
+    <p class="text-gray-600 mb-4">
+      Kamu akan menghapus matchup:
+    </p>
+
+    <div class="border rounded-xl p-4 mb-6">
+      <p class="font-semibold">{{ ch.title }}</p>
+      <p class="text-sm text-gray-500">
+        {{ ch.get_sport_display }} • {{ ch.get_match_category_display }}
+      </p>
+      <p class="text-sm text-gray-500 mt-1">
+        Host: {{ ch.host.name }}
+      </p>
+    </div>
+
+    <p class="text-sm text-red-600 mb-4">
+      Tindakan ini tidak bisa dibatalkan. Semua data terkait matchup ini akan hilang.
+    </p>
+
+    <form method="post" class="flex items-center gap-3">
+      {% csrf_token %}
+      <a href="{% url 'versus:detail' ch.pk %}"
+         class="px-4 py-2 rounded-lg bg-gray-100 text-sm">
+        Batal
+      </a>
+      <button type="submit"
+              class="px-5 py-2 rounded-full text-white text-sm hover:opacity-90"
+              style="background-color:#D84040"
+              onclick="return confirm('Yakin ingin menghapus matchup ini secara permanen?');">
+        Ya, hapus
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

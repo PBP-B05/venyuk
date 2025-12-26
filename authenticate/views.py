@@ -48,7 +48,6 @@ def register(request):
                     })
                 return redirect('authenticate:login')
         else:
-            # ADD THIS PART 👇
             errors = form.errors.as_json()
             print("Registration errors:", errors)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

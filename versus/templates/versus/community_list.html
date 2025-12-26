@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+{% include "navbar.html" %}
+
+<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-24 pb-16">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-2xl font-bold">Communities</h1>
+      <p class="text-sm text-gray-600 mt-1">
+        Kelola komunitas kamu atau join komunitas lain untuk ikut Versus.
+      </p>
+    </div>
+    <a href="{% url 'versus:list' %}"
+       class="text-sm hover:opacity-80"
+       style="color:#D84040">
+      ← Back to Versus
+    </a>
+  </div>
+
+  <!-- My community status -->
+  <div class="bg-white rounded-2xl shadow p-5 mb-6">
+    <h2 class="text-lg font-semibold mb-2">Status Community Kamu</h2>
+
+    {% if my_current %}
+      <p class="text-sm text-gray-700">
+        Kamu saat ini tergabung di:
+        <a href="{% url 'versus:community_detail' my_current.pk %}"
+           class="font-semibold hover:underline">
+          {{ my_current.name }}
+        </a>
+        {% if my_owned and my_owned.pk == my_current.pk %}
+          <span class="ml-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+            Owner
+          </span>
+        {% endif %}
+      </p>
+
+      <div class="mt-3 flex flex-wrap gap-3">
+        {% if my_owned and my_owned.pk == my_current.pk %}
+          <a href="{% url 'versus:community_update' my_current.pk %}"
+             class="px-3 py-1 rounded-full border border-gray-300 text-xs hover:bg-gray-50">
+            Edit Community
+          </a>
+          <a href="{% url 'versus:community_detail' my_current.pk %}"
+             class="px-3 py-1 rounded-full border border-gray-300 text-xs hover:bg-gray-50">
+            View Detail
+          </a>
+        {% else %}
+          <a href="{% url 'versus:community_detail' my_current.pk %}"
+             class="px-3 py-1 rounded-full border border-gray-300 text-xs hover:bg-gray-50">
+            View Detail
+          </a>
+        {% endif %}
+
+        <form method="post" action="{% url 'versus:community_leave' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="px-3 py-1 rounded-full text-xs text-white hover:opacity-90"
+                  style="background-color:#D84040"
+                  onclick="return confirm('Yakin ingin leave community ini?');">
+            Leave Community
+          </button>
+        </form>
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-600">
+        Kamu belum tergabung di community manapun.
+      </p>
+      <div class="mt-3 flex flex-wrap gap-3">
+        <a href="{% url 'versus:community_create' %}"
+           class="px-4 py-2 rounded-full text-white text-sm hover:opacity-90"
+           style="background-color:#D84040">
+          + Create Community
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- List all communities -->
+  <div class="bg-white rounded-2xl shadow p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">Semua Communities</h2>
+      {% if not my_current %}
+        <a href="{% url 'versus:community_create' %}"
+           class="px-3 py-1 rounded-full text-xs text-white hover:opacity-90"
+           style="background-color:#D84040">
+          + Create Community
+        </a>
+      {% endif %}
+    </div>
+
+    {% if communities %}
+      <div class="divide-y divide-gray-100">
+        {% for comm in communities %}
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <a href="{% url 'versus:community_detail' comm.pk %}"
+                   class="font-semibold hover:underline">
+                  {{ comm.name }}
+                </a>
+                {% if my_current and my_current.pk == comm.pk %}
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                    Your Community
+                  </span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                {{ comm.get_primary_sport_display }} • {{ comm.total_members }} members
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <a href="{% url 'versus:community_detail' comm.pk %}"
+                 class="px-3 py-1 rounded-full border border-gray-300 text-xs hover:bg-gray-50">
+                View
+              </a>
+
+              {% if not my_current %}
+                <form method="post" action="{% url 'versus:community_join' comm.pk %}">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="px-3 py-1 rounded-full text-xs text-white hover:opacity-90"
+                          style="background-color:#D84040">
+                    Join
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-500">Belum ada community.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+
